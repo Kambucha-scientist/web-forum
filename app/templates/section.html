@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}{{ section.name }} — CodeForum{% endblock %}
+
+{% block content %}
+<div class="section-layout">
+    <!-- Основной контент: список тредов -->
+    <main class="threads-list">
+        <div class="section-header">
+            <h1>{{ section.name }}</h1>
+            <p class="section-description">{{ section.description }}</p>
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('forum.new_thread', section_id=section.id) }}" class="btn btn-primary">➕ Создать тему</a>
+            {% endif %}
+        </div>
+
+        {% for thread in threads %}
+        <article class="thread-card">
+            <div class="thread-info">
+                <h3>
+                    <a href="{{ url_for('forum.thread', thread_id=thread.id) }}" class="thread-title">
+                        {{ thread.title }}
+                    </a>
+                    {% if thread.thread_type == 'Q&A' %}
+                        <span class="badge qa">Q&A</span>
+                    {% elif thread.thread_type == 'article' %}
+                        <span class="badge article">Статья</span>
+                    {% else %}
+                        <span class="badge discussion">Обсуждение</span>
+                    {% endif %}
+                </h3>
+                <div class="thread-meta">
+                    Автор: <a href="{{ url_for('profile.view', user_id=thread.author.id) }}">{{ thread.author.username }}</a>
+                    • {{ thread.created_at.strftime('%d.%m.%Y') }}
+                </div>
+                <div class="thread-preview">
+                    {{ thread.first_post_content|truncate(200) }}
+                </div>
+            </div>
+            <div class="thread-actions">
+                <a href="{{ url_for('forum.thread', thread_id=thread.id) }}" class="btn-reply">💬 Ответить</a>
+                {% if current_user.is_authenticated %}
+                <button class="btn-upvote" data-target="thread" data-id="{{ thread.id }}">👍 {{ thread.rating_count or 0 }}</button>
+                {% else %}
+                <span class="upvote-count">👍 {{ thread.rating_count or 0 }}</span>
+                {% endif %}
+            </div>
+        </article>
+        {% else %}
+        <p>В этом разделе ещё нет тем. Будьте первым!</p>
+        {% endfor %}
+
+        <!-- Пагинация (будет добавлена позже) -->
+        {% if pagination and pagination.pages > 1 %}
+        <div class="pagination">
+            {# ... стандартная пагинация #}
+        </div>
+        {% endif %}
+    </main>
+
+    <!-- Правая колонка: топ-3 активных участника -->
+    <aside class="active-users">
+        <h3>🏆 Активные участники раздела</h3>
+        <ul class="user-rank">
+            {% for user in top_users %}
+            <li>
+                <span class="user-rank-number">{{ loop.index }}.</span>
+                <a href="{{ url_for('profile.view', user_id=user.id) }}">{{ user.username }}</a>
+                <span class="post-count">{{ user.post_count }} постов</span>
+            </li>
+            {% else %}
+            <li>Нет данных</li>
+            {% endfor %}
+        </ul>
+    </aside>
+</div>
+{% endblock %}

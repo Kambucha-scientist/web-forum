@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Регистрация — CodeForum{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <h1>Регистрация</h1>
+        <form method="POST" action="{{ url_for('auth.register') }}">
+            {{ form.hidden_tag() if form else '' }}
+            <div class="form-group">
+                <label for="username">Имя пользователя</label>
+                <input type="text" name="username" id="username" required>
+                <small>Только буквы, цифры и символы _-</small>
+            </div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" name="email" id="email" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Пароль</label>
+                <input type="password" name="password" id="password" required>
+                <small>Минимум 6 символов</small>
+            </div>
+            <div class="form-group">
+                <label for="confirm">Подтверждение пароля</label>
+                <input type="password" name="confirm" id="confirm" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Зарегистрироваться</button>
+        </form>
+        <p class="auth-footer">
+            Уже есть аккаунт? <a href="{{ url_for('auth.login') }}">Войти</a>
+        </p>
+    </div>
+</div>
+{% endblock %}
