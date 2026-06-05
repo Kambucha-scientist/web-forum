@@ -1,5 +1,4 @@
-
-from flask import Flask, render_template
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
@@ -30,6 +29,9 @@ def create_app(config_class=Config):
 
     from app.auth import bp as auth_bp
     app.register_blueprint(auth_bp)
+
+    from app.admin import bp as admin_bp
+    app.register_blueprint(admin_bp)
 
     import os
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)

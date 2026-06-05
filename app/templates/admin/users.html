@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Управление пользователями — Админка{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <h1>👥 Управление пользователями</h1>
+    <p>Вы можете изменять роли пользователей (user, moderator, admin).</p>
+    
+    <table class="users-table">
+        <thead>
+            <tr>
+                <th>Имя пользователя</th>
+                <th>Email</th>
+                <th>Текущая роль</th>
+                <th>Действие</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.username }}</td>
+                <td>{{ user.email }}</td>
+                <td>
+                    <span class="role-badge role-{{ user.role.value }}">
+                        {{ user.role.value }}
+                    </span>
+                </td>
+                <td>
+                    <form method="POST" action="{{ url_for('admin.promote_user', user_id=user.id) }}">
+                        <select name="role" class="role-select">
+                            <option value="user" {% if user.role.value == 'user' %}selected{% endif %}>Пользователь</option>
+                            <option value="moderator" {% if user.role.value == 'moderator' %}selected{% endif %}>Модератор</option>
+                            <option value="admin" {% if user.role.value == 'admin' %}selected{% endif %}>Администратор</option>
+                        </select>
+                        <button type="submit" class="btn btn-sm">Сохранить</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

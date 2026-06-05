@@ -18,6 +18,9 @@
                     <li><a href="{{ url_for('main.index') }}">Главная</a></li>
                     {% if current_user.is_authenticated %}
                         <li><a href="#">Профиль ({{ current_user.username }})</a></li>
+                        {% if current_user.is_admin() %}
+                            <li><a href="{{ url_for('admin.users') }}">Админ.панель</a></li>
+                        {% endif %}
                         <li><a href="{{url_for('auth.logout')}}">Выйти</a></li>
                     {% else %}
                         <li><a href="{{ url_for('auth.login') }}">Вход</a></li>
