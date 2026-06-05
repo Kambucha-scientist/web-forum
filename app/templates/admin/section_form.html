@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} — Админка{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <h1>{{ title }}</h1>
+    
+    <form method="POST" class="section-form">
+        <div class="form-group">
+            <label for="name">Название раздела *</label>
+            <input type="text" name="name" id="name" required value="{{ section.name if section else '' }}">
+            <small>Отображается на сайте (например, "Python")</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="codename">Кодовое имя (URL) *</label>
+            <input type="text" name="codename" id="codename" required value="{{ section.codename if section else '' }}" pattern="[a-z0-9_-]+">
+            <small>Будет в URL: <code>/<span id="codename-preview">{{ section.codename if section else 'раздел' }}</span></code>. Только латиница, цифры, _ и -</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="description">Описание</label>
+            <textarea name="description" id="description" rows="3">{{ section.description if section else '' }}</textarea>
+            <small>Краткое описание раздела (необязательно)</small>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+            <a href="{{ url_for('admin.sections') }}" class="btn">Отмена</a>
+        </div>
+    </form>
+</div>
+
+<script>
+    // Живой предпросмотр URL
+    const codenameInput = document.getElementById('codename');
+    const previewSpan = document.getElementById('codename-preview');
+    if (codenameInput) {
+        codenameInput.addEventListener('input', function() {
+            previewSpan.textContent = this.value || 'раздел';
+        });
+    }
+</script>
+{% endblock %}

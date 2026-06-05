@@ -3,6 +3,10 @@
 {% block title %}Управление пользователями — Админка{% endblock %}
 
 {% block content %}
+<div class="admin-tabs">
+    <a href="{{ url_for('admin.users') }}" class="tab {% if request.endpoint == 'admin.users' %}active{% endif %}">👥 Пользователи</a>
+    <a href="{{ url_for('admin.sections') }}" class="tab {% if request.endpoint == 'admin.sections' %}active{% endif %}">📁 Разделы</a>
+</div>
 <div class="admin-container">
     <h1>👥 Управление пользователями</h1>
     <p>Вы можете изменять роли пользователей (user, moderator, admin).</p>

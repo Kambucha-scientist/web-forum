@@ -10,7 +10,7 @@
         <ul class="sections">
             {% for section in sections %}
             <li>
-                <a href="{{ url_for('forum.section', section_id=section.id) }}" class="section-link">
+                <a href="{{ url_for('main.section_by_codename', codename=section.codename) }}" class="section-link">
                     <strong>{{ section.name }}</strong>
                     <span class="section-desc">{{ section.description }}</span>
                 </a>
@@ -27,11 +27,11 @@
         <ul class="hot-list">
             {% for thread in hot_threads %}
             <li>
-                <a href="{{ url_for('forum.thread', thread_id=thread.id) }}" class="hot-title">
+                <a href="{{ url_for('main.view_thread', codename=thread.section.codename, thread_id=thread.id) }}" class="hot-title">
                     {{ thread.title }}
                 </a>
                 <div class="hot-meta">
-                    {{ thread.posts_count or 0 }} ответов • {{ thread.rating_sum or 0 }} ↑
+                    {{ thread.posts|length }} ответов
                 </div>
             </li>
             {% else %}

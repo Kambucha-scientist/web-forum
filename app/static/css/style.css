@@ -402,3 +402,160 @@ body {
 .btn-sm:hover {
     background-color: #2563eb;
 }
+
+/* Thread page */
+.thread-container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.back-link {
+    display: inline-block;
+    margin-bottom: 1rem;
+    color: #3b82f6;
+    text-decoration: none;
+}
+
+.post-card {
+    background: white;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.post-author {
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.post-date {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-left: 1rem;
+}
+
+.post-content {
+    line-height: 1.6;
+}
+
+.post-content pre {
+    background: #1e293b;
+    color: #e2e8f0;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+}
+
+.reply-form, .form-container {
+    background: white;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-top: 2rem;
+}
+
+textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.375rem;
+    font-family: monospace;
+}
+
+.markdown-hint {
+    margin-top: 1.5rem;
+    background: #f8fafc;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.actions {
+    white-space: nowrap;
+}
+
+.btn-danger {
+    background-color: #ef4444;
+}
+.btn-danger:hover {
+    background-color: #dc2626;
+}
+
+.section-form {
+    max-width: 600px;
+}
+
+.section-form code {
+    background: #f1f5f9;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+}
+
+.admin-tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.tab {
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    color: #64748b;
+    border-bottom: 2px solid transparent;
+}
+
+.tab.active {
+    color: #3b82f6;
+    border-bottom-color: #3b82f6;
+}
+
+.thread-last-replies {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #e2e8f0;
+    font-size: 0.8rem;
+}
+
+.replies-label {
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 0.5rem;
+}
+
+.replies-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.reply-item {
+    background: #f8fafc;
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    line-height: 1.4;
+}
+
+.reply-author {
+    font-weight: 600;
+    color: #3b82f6;
+}
+
+.reply-content {
+    color: #334155;
+    margin-left: 0.5rem;
+}
+
+.reply-content p {
+    display: inline;
+}

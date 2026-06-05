@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}{{ thread.title }} — {{ section.name }}{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+{% endblock %}
+
+{% block content %}
+<div class="thread-container">
+    <div class="thread-header">
+        <a href="{{ url_for('main.section_by_codename', codename=section.codename) }}" class="back-link">
+            ← Назад к {{ section.name }}
+        </a>
+        <h1>{{ thread.title }}</h1>
+        <div class="thread-meta">
+            <span>Автор: {{ thread.author.username }}</span>
+            <span>📅 {{ thread.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+            <span>💬 {{ posts|length }} ответов</span>
+            <span>👍 {{ rating_count }}</span>
+        </div>
+    </div>
+
+    <div class="posts-list">
+        {% for post in posts %}
+        <div class="post-card" id="post-{{ post.id }}">
+            <div class="post-author">
+                <strong>{{ post.author.username }}</strong>
+                <span class="post-date">{{ post.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+            </div>
+            <div class="post-content">
+                {{ post.html_content|safe }}
+            </div>
+            {% if current_user.is_authenticated %}
+            <div class="post-actions">
+                <button class="btn-upvote" data-target="post" data-id="{{ post.id }}">👍 Апвоут</button>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if current_user.is_authenticated %}
+    <div class="reply-form">
+        <h3>Ответить в тему</h3>
+        <form method="POST" action="{{ url_for('main.reply_to_thread', codename=section.codename, thread_id=thread.id) }}">
+            <textarea name="content" rows="6" placeholder="Введите ответ в формате Markdown..."></textarea>
+            <button type="submit" class="btn btn-primary">Отправить</button>
+        </form>
+        <small>Поддерживается Markdown: **жирный**, *курсив*, ```код```</small>
+    </div>
+    {% else %}
+    <div class="login-prompt">
+        <p><a href="{{ url_for('auth.login') }}">Войдите</a>, чтобы ответить в тему.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

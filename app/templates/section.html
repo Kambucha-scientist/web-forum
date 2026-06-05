@@ -4,69 +4,77 @@
 
 {% block content %}
 <div class="section-layout">
-    <!-- Основной контент: список тредов -->
     <main class="threads-list">
         <div class="section-header">
             <h1>{{ section.name }}</h1>
             <p class="section-description">{{ section.description }}</p>
             {% if current_user.is_authenticated %}
-            <a href="{{ url_for('forum.new_thread', section_id=section.id) }}" class="btn btn-primary">➕ Создать тему</a>
+            <a href="{{ url_for('main.new_thread', codename=section.codename) }}" class="btn btn-primary">➕ Создать тему</a>
             {% endif %}
         </div>
 
-        {% for thread in threads %}
+        {% for thread_data in threads %}
         <article class="thread-card">
             <div class="thread-info">
                 <h3>
-                    <a href="{{ url_for('forum.thread', thread_id=thread.id) }}" class="thread-title">
-                        {{ thread.title }}
+                    <a href="{{ url_for('main.view_thread', codename=section.codename, thread_id=thread_data.thread.id) }}" class="thread-title">
+                        {{ thread_data.thread.title }}
                     </a>
-                    {% if thread.thread_type == 'Q&A' %}
+                    {% if thread_data.thread.thread_type.value == 'Q&A' %}
                         <span class="badge qa">Q&A</span>
-                    {% elif thread.thread_type == 'article' %}
+                    {% elif thread_data.thread.thread_type.value == 'article' %}
                         <span class="badge article">Статья</span>
                     {% else %}
                         <span class="badge discussion">Обсуждение</span>
                     {% endif %}
                 </h3>
                 <div class="thread-meta">
-                    Автор: <a href="{{ url_for('profile.view', user_id=thread.author.id) }}">{{ thread.author.username }}</a>
-                    • {{ thread.created_at.strftime('%d.%m.%Y') }}
+                    Автор: <a href="#">{{ thread_data.thread.author.username }}</a>
+                    • {{ thread_data.thread.created_at.strftime('%d.%m.%Y') }}
+                    • 💬 {{ thread_data.posts_count }} ответов
                 </div>
                 <div class="thread-preview">
-                    {{ thread.first_post_content|truncate(200) }}
+                    {{ thread_data.preview|safe }}
                 </div>
-            </div>
-            <div class="thread-actions">
-                <a href="{{ url_for('forum.thread', thread_id=thread.id) }}" class="btn-reply">💬 Ответить</a>
-                {% if current_user.is_authenticated %}
-                <button class="btn-upvote" data-target="thread" data-id="{{ thread.id }}">👍 {{ thread.rating_count or 0 }}</button>
-                {% else %}
-                <span class="upvote-count">👍 {{ thread.rating_count or 0 }}</span>
+                
+                <!-- ✅ ПОСЛЕДНИЕ 3 ОТВЕТА -->
+                {% if thread_data.last_replies %}
+                <div class="thread-last-replies">
+                    <div class="replies-label">📌 Последние ответы:</div>
+                    <div class="replies-list">
+                        {% for reply in thread_data.last_replies %}
+                        <div class="reply-item">
+                            <span class="reply-author">{{ reply.author.username }}</span>:
+                            <span class="reply-content">{{ reply.content|safe }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% elif thread_data.posts_count > 1 %}
+                <div class="thread-last-replies">
+                    <em>Нет ответов для предпросмотра</em>
+                </div>
                 {% endif %}
+            </div>
+            
+            <div class="thread-actions">
+                <a href="{{ url_for('main.view_thread', codename=section.codename, thread_id=thread_data.thread.id) }}" class="btn-reply">💬 Ответить</a>
+                <button class="btn-upvote" data-target="thread" data-id="{{ thread_data.thread.id }}">👍 {{ thread_data.rating_count }}</button>
             </div>
         </article>
         {% else %}
         <p>В этом разделе ещё нет тем. Будьте первым!</p>
         {% endfor %}
-
-        <!-- Пагинация (будет добавлена позже) -->
-        {% if pagination and pagination.pages > 1 %}
-        <div class="pagination">
-            {# ... стандартная пагинация #}
-        </div>
-        {% endif %}
     </main>
 
-    <!-- Правая колонка: топ-3 активных участника -->
     <aside class="active-users">
         <h3>🏆 Активные участники раздела</h3>
         <ul class="user-rank">
-            {% for user in top_users %}
+            {% for user, post_count in top_users %}
             <li>
                 <span class="user-rank-number">{{ loop.index }}.</span>
-                <a href="{{ url_for('profile.view', user_id=user.id) }}">{{ user.username }}</a>
-                <span class="post-count">{{ user.post_count }} постов</span>
+                <a href="#">{{ user.username }}</a>
+                <span class="post-count">{{ post_count }} постов</span>
             </li>
             {% else %}
             <li>Нет данных</li>
