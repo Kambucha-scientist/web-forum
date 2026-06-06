@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Новая тема — {{ section.name }}{% endblock %}
+{% block title %}Новая тема — {{ section.title }}{% endblock %}
 
 {% block content %}
 <div class="form-container">
-    <h1>Новая тема в разделе «{{ section.name }}»</h1>
+    <h1>Новая тема в разделе «{{ section.title }}»</h1>
     
     <form method="POST">
         <div class="form-group">
@@ -15,9 +15,11 @@
         <div class="form-group">
             <label for="thread_type">Тип темы</label>
             <select name="thread_type" id="thread_type">
-                <option value="discussion">Обсуждение</option>
-                <option value="Q&A">Вопрос-ответ</option>
-                <option value="article">Статья</option>
+                <option value="question">❓ Вопрос или задача</option>
+                <option value="discussion">💬 Открытое обсуждение</option>
+                <option value="article">📖 Статья или туториал</option>
+                <option value="showcase">✨ Проект или портфолио</option>
+                <option value="resource">📚 Полезный материал</option>
             </select>
         </div>
         

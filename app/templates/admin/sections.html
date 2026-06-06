@@ -3,6 +3,11 @@
 {% block title %}Управление разделами — Админка{% endblock %}
 
 {% block content %}
+<div class="admin-tabs">
+    <a href="{{ url_for('admin.users') }}" class="tab {% if request.endpoint == 'admin.users' %}active{% endif %}">👥 Пользователи</a>
+    <a href="{{ url_for('admin.sections') }}" class="tab {% if request.endpoint == 'admin.sections' %}active{% endif %}">📁 Разделы</a>
+</div>
+
 <div class="admin-container">
     <div class="admin-header">
         <h1>📁 Управление разделами</h1>
@@ -15,6 +20,8 @@
             <tr>
                 <th>Название</th>
                 <th>Кодовое имя</th>
+                <th>Группа</th>
+                <th>Видимый</th>
                 <th>Описание</th>
                 <th>Тем</th>
                 <th>Действия</th>
@@ -23,14 +30,26 @@
         <tbody>
             {% for section in sections %}
             <tr>
-                <td><strong>{{ section.name }}</strong></td>
+                <td><strong>{{ section.title }}</strong></td>
                 <td><code>{{ section.codename }}</code></td>
+                <td>
+                    <span class="group-badge group-{{ section.group.value }}">
+                        {{ section.group.value }}
+                    </span>
+                </td>
+                <td>
+                    {% if section.is_visible %}
+                        <span class="visible-badge visible-yes">✅ да</span>
+                    {% else %}
+                        <span class="visible-badge visible-no">❌ нет</span>
+                    {% endif %}
+                 </td>
                 <td>{{ section.description or '—' }}</td>
                 <td>{{ section.threads|length }}</td>
                 <td class="actions">
                     <a href="{{ url_for('admin.edit_section', section_id=section.id) }}" class="btn-sm">✏️ Ред.</a>
                     <form method="POST" action="{{ url_for('admin.delete_section', section_id=section.id) }}" style="display: inline;">
-                        <button type="submit" class="btn-sm btn-danger" onclick="return confirm('Удалить раздел «{{ section.name }}» вместе со всеми темами?')">🗑️ Удалить</button>
+                        <button type="submit" class="btn-sm btn-danger" onclick="return confirm('Удалить раздел «{{ section.title }}» вместе со всеми темами?')">🗑️ Удалить</button>
                     </form>
                 </td>
             </tr>

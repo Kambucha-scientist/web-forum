@@ -4,14 +4,13 @@
 
 {% block content %}
 <div class="home-layout">
-    <!-- Левая колонка: список разделов -->
     <aside class="sections-list">
         <h2>Разделы форума</h2>
         <ul class="sections">
             {% for section in sections %}
             <li>
                 <a href="{{ url_for('main.section_by_codename', codename=section.codename) }}" class="section-link">
-                    <strong>{{ section.name }}</strong>
+                    <strong>{{ section.title }}</strong>
                     <span class="section-desc">{{ section.description }}</span>
                 </a>
             </li>
@@ -21,23 +20,23 @@
         </ul>
     </aside>
 
-    <!-- Правая колонка: топ-5 горячих обсуждений -->
     <aside class="hot-threads">
-        <h2>🔥 Горячие обсуждения</h2>
-        <ul class="hot-list">
-            {% for thread in hot_threads %}
-            <li>
-                <a href="{{ url_for('main.view_thread', codename=thread.section.codename, thread_id=thread.id) }}" class="hot-title">
-                    {{ thread.title }}
-                </a>
-                <div class="hot-meta">
-                    {{ thread.posts|length }} ответов
-                </div>
-            </li>
-            {% else %}
-            <li>Пока нет активных тем</li>
-            {% endfor %}
-        </ul>
-    </aside>
+    <h2>🔥 Горячие обсуждения</h2>
+    <ul class="hot-list">
+        {% for thread_data in hot_threads %}
+        {# thread_data = (thread, posts_count, rating_sum, score) #}
+        <li>
+            <a href="{{ url_for('main.view_thread', codename=thread_data[0].section.codename, thread_id=thread_data[0].id) }}" class="hot-title">
+                {{ thread_data[0].title }}
+            </a>
+            <div class="hot-meta">
+                {{ thread_data[1] }} ответов • 👍 {{ thread_data[2] }}
+            </div>
+        </li>
+        {% else %}
+        <li>Пока нет активных тем</li>
+        {% endfor %}
+    </ul>
+</aside>
 </div>
 {% endblock %}

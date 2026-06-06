@@ -1,11 +1,15 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
-from app.models import Section, Thread, Post, User
 from app import db
+from app.models import Section, Thread, Post, User, ThreadType, GroupType, Rating
 from sqlalchemy import func, desc
+from datetime import datetime, timezone, timedelta
 import markdown
 import re
- 
+import math
+from collections import defaultdict
+
+
 bp = Blueprint('main', __name__)
 
 def truncate_html(html, length=200):
@@ -14,180 +18,292 @@ def truncate_html(html, length=200):
         text = text[:length] + '...'
     return text
 
+def thread_hot_score(U, M, L, A):
+    """
+    U - уникальные авторы за последние 24ч
+    M - сообщения за последние 24ч
+    L - апвоуты за последние 24ч
+    A - часы с последнего сообщения
+    """
+    log_part = math.log1p(5*U + 3*M + 2*L)
+    decay_part = 1 / (1 + A/24)
+    return log_part + decay_part
+
+def get_post_rating(post_id):
+    """Возвращает количество голосов за пост"""
+    return db.session.query(func.count(Rating.id)).filter(Rating.target_id == post_id).scalar() or 0
+
+def get_thread_rating(thread_id):
+    """Возвращает сумму голосов за все посты в треде"""
+    return db.session.query(func.count(Rating.id)).join(Post, Post.id == Rating.target_id).filter(Post.thread_id == thread_id).scalar() or 0
+
+
+
 @bp.route('/')
 @bp.route('/index')
 def index():
-    sections = Section.query.order_by(Section.name).all()
-    hot_threads = (Thread.query
-                   .outerjoin(Thread.posts)
-                   .group_by(Thread.id)
-                   .order_by(func.count(Thread.posts).desc())
-                   .limit(5)
-                   .all())
+    sections = Section.query.filter_by(is_visible=True).order_by(Section.title).all()
+    now = datetime.utcnow()
+    day_ago = now - timedelta(hours=24)
+    
+    # Посты за 24 часа
+    posts_last_24h = Post.query.filter(Post.created_at >= day_ago).all()
+    thread_stats = defaultdict(lambda: {'authors': set(), 'messages': 0, 'post_ids': []})
+    for p in posts_last_24h:
+        thread_stats[p.thread_id]['authors'].add(p.user_id)
+        thread_stats[p.thread_id]['messages'] += 1
+        thread_stats[p.thread_id]['post_ids'].append(p.id)
+    
+    all_post_ids = [pid for stats in thread_stats.values() for pid in stats['post_ids']]
+    ratings_last_24h = []
+    if all_post_ids:
+        ratings_last_24h = Rating.query.filter(
+            Rating.target_id.in_(all_post_ids),
+            Rating.created_at >= day_ago
+        ).all()
+    
+    post_to_thread = {}
+    for tid, stats in thread_stats.items():
+        for pid in stats['post_ids']:
+            post_to_thread[pid] = tid
+    
+    upvotes_per_thread = defaultdict(int)
+    for r in ratings_last_24h:
+        tid = post_to_thread.get(r.target_id)
+        if tid:
+            upvotes_per_thread[tid] += 1
+    
+    # Все треды
+    all_threads = Thread.query.filter_by(is_closed=False).all()
+    hot_list = []
+    
+    for thread in all_threads:
+        if thread.id in thread_stats:
+            U = len(thread_stats[thread.id]['authors'])
+            M = thread_stats[thread.id]['messages']
+            L = upvotes_per_thread.get(thread.id, 0)
+            last_post = Post.query.filter_by(thread_id=thread.id).order_by(Post.created_at.desc()).first()
+            A = (now - last_post.created_at).total_seconds() / 3600 if last_post else (now - thread.created_at).total_seconds() / 3600
+            posts_count = M  # или общее количество постов (не только за 24ч) – сделаем отдельно
+            rating_sum = get_thread_rating(thread.id)  # общая сумма голосов за всё время
+        else:
+            last_post = Post.query.filter_by(thread_id=thread.id).order_by(Post.created_at.desc()).first()
+            A = (now - last_post.created_at).total_seconds() / 3600 if last_post else (now - thread.created_at).total_seconds() / 3600
+            U = M = L = 0
+            posts_count = Post.query.filter_by(thread_id=thread.id).count()
+            rating_sum = get_thread_rating(thread.id)
+        
+        score = thread_hot_score(U, M, L, A)
+        # Сохраняем кортеж: (thread, posts_count, rating_sum, score)
+        hot_list.append((thread, posts_count, rating_sum, score))
+    
+    # Сортируем по score и берём топ-5
+    hot_list.sort(key=lambda x: x[3], reverse=True)
+    hot_threads = hot_list[:5]   # каждый элемент: (thread, posts_count, rating_sum, score)
+    
     return render_template('index.html', sections=sections, hot_threads=hot_threads)
 
 @bp.route('/<string:codename>')
 def section_by_codename(codename):
-    """Страница раздела (по codename: /py, /cpp, /js)"""
-    section = Section.query.filter_by(codename=codename).first_or_404()
+    section = Section.query.filter_by(codename=codename, is_visible=True).first_or_404()
     
-    # Получаем все треды раздела с авторами и количеством постов
-    threads = (Thread.query
-               .filter_by(section_id=section.id)
-               .outerjoin(Post)
-               .group_by(Thread.id)
-               .order_by(Thread.created_at.desc())
-               .all())
+    # Все треды раздела (не закрытые)
+    threads = Thread.query.filter_by(section_id=section.id, is_closed=False)\
+                         .order_by(Thread.is_pinned.desc(), Thread.created_at.desc()).all()
     
-    # Для каждого треда получаем превью первого поста и количество постов
+    # Получаем ID всех тредов
+    thread_ids = [t.id for t in threads]
+    
+    # Один запрос: все посты этих тредов с их рейтингами (количество голосов)
+    # Используем LEFT JOIN с подсчётом голосов
+    posts_with_ratings = db.session.query(
+        Post.id, Post.thread_id, Post.user_id, Post.content, Post.created_at,
+        func.count(Rating.id).label('rating_count')
+    ).outerjoin(Rating, Rating.target_id == Post.id)\
+     .filter(Post.thread_id.in_(thread_ids))\
+     .group_by(Post.id)\
+     .order_by(Post.created_at)\
+     .all()
+    
+    # Группируем посты по тредам
+    thread_posts = defaultdict(list)
+    for p in posts_with_ratings:
+        thread_posts[p.thread_id].append({
+            'id': p.id,
+            'user_id': p.user_id,
+            'content': p.content,
+            'created_at': p.created_at,
+            'rating_count': p.rating_count or 0
+        })
+    
+    # Дополнительно получаем авторов тредов (один запрос)
+    users_ids = set(p.user_id for p in posts_with_ratings) | set(t.user_id for t in threads)
+    users = User.query.filter(User.id.in_(users_ids)).all()
+    user_map = {u.id: u for u in users}
+    
+    # Формируем threads_data
     threads_data = []
     for thread in threads:
-        first_post = Post.query.filter_by(thread_id=thread.id).order_by(Post.created_at).first()
+        posts = thread_posts.get(thread.id, [])
+        first_post = posts[0] if posts else None
         preview = ''
         if first_post:
-            # Преобразуем markdown в HTML и обрезаем
-            html_content = markdown.markdown(first_post.content)
+            html_content = markdown.markdown(first_post['content'])
             preview = truncate_html(html_content, 150)
         
-        posts_count = Post.query.filter_by(thread_id=thread.id).count()
-        rating_count = db.session.query(func.count(Post.id)).filter(
-            Post.thread_id == thread.id
-        ).scalar()  # пока заглушка для рейтинга
-
-        last_replies = (Post.query
-                        .filter(Post.thread_id == thread.id)
-                        .filter(Post.id != first_post.id if first_post else True)
-                        .order_by(Post.created_at.desc())
-                        .limit(3)
-                        .all())
+        posts_count = len(posts)
+        rating_sum = sum(p['rating_count'] for p in posts)
         
-        # Преобразуем ответы в HTML (обрезанные)
+        # Последние 3 ответа (исключая первый пост)
+        last_replies = posts[1:][-3:] if len(posts) > 1 else []
         replies_html = []
         for reply in last_replies:
-            reply_html = markdown.markdown(reply.content)
+            reply_html = markdown.markdown(reply['content'])
             replies_html.append({
-                'author': reply.author,
+                'author': user_map.get(reply['user_id']),
                 'content': truncate_html(reply_html, 100),
-                'created_at': reply.created_at
+                'created_at': reply['created_at']
             })
         
         threads_data.append({
             'thread': thread,
             'preview': preview,
             'posts_count': posts_count,
-            'rating_count': rating_count or 0,
-            'last_replies': replies_html,      
-            'replies_count': len(last_replies)  
+            'rating_sum': rating_sum,
+            'last_replies': replies_html,
+            'replies_count': len(last_replies)
         })
     
-    # Топ-3 активных участника в этом разделе
-    top_users = (db.session.query(User, func.count(Post.id).label('post_count'))
-                 .join(Post, Post.user_id == User.id)
-                 .join(Thread, Thread.id == Post.thread_id)
-                 .filter(Thread.section_id == section.id)
-                 .group_by(User.id)
-                 .order_by(desc('post_count'))
-                 .limit(3)
-                 .all())
+    # Топ-3 участников по h-index в этом разделе
+    # Собираем все посты с рейтингами для этого раздела
+    user_post_ratings = defaultdict(list)
+    for p in posts_with_ratings:
+        user_post_ratings[p.user_id].append(p.rating_count or 0)
     
-    return render_template('section.html', 
-                         section=section, 
-                         threads=threads_data,
-                         top_users=top_users)
-
-@bp.route('/<string:codename>/<uuid:thread_id>/reply', methods=['POST'])
-@login_required
-def reply_to_thread(codename, thread_id):
-    """Ответ на существующий тред"""
-    section = Section.query.filter_by(codename=codename).first_or_404()
-    thread = Thread.query.filter_by(id=thread_id, section_id=section.id).first_or_404()
+    def h_index(ratings):
+        ratings.sort(reverse=True)
+        h = 0
+        for i, r in enumerate(ratings, 1):
+            if r >= i:
+                h = i
+            else:
+                break
+        return h
     
-    content = request.form.get('content', '').strip()
+    top_users = []
+    for user_id, ratings in user_post_ratings.items():
+        h = h_index(ratings)
+        top_users.append((user_map.get(user_id), h))
+    top_users.sort(key=lambda x: x[1], reverse=True)
+    top_users = top_users[:3]
     
-    if not content or len(content) < 3:
-        flash('Содержание ответа должно быть минимум 3 символа', 'danger')
-        return redirect(url_for('main.view_thread', codename=section.codename, thread_id=thread.id))
-    
-    post = Post(content=content, thread_id=thread.id, user_id=current_user.id)
-    db.session.add(post)
-    db.session.commit()
-    
-    flash('Ответ успешно добавлен!', 'success')
-    return redirect(url_for('main.view_thread', codename=section.codename, thread_id=thread.id))
+    return render_template('section.html', section=section, threads=threads_data, top_users=top_users)
 
 @bp.route('/<string:codename>/new', methods=['GET', 'POST'])
 @login_required
 def new_thread(codename):
-    """Создание нового треда в разделе"""
-    section = Section.query.filter_by(codename=codename).first_or_404()
+    section = Section.query.filter_by(codename=codename, is_visible=True).first_or_404()
     
     if request.method == 'POST':
         title = request.form.get('title', '').strip()
         content = request.form.get('content', '').strip()
-        thread_type_str = request.form.get('thread_type', 'discussion')
+        thread_type_str = request.form.get('thread_type', 'question')
         
-        # Валидация
         if not title or len(title) < 5:
-            flash('Заголовок должен содержать минимум 5 символов', 'danger')
+            flash('Заголовок минимум 5 символов', 'danger')
             return render_template('new_thread.html', section=section)
-        
         if not content or len(content) < 10:
-            flash('Содержание поста должно быть минимум 10 символов', 'danger')
+            flash('Содержание минимум 10 символов', 'danger')
             return render_template('new_thread.html', section=section)
         
-        # Преобразуем строку в Enum
-        from app.models import ThreadType
         try:
             thread_type = ThreadType(thread_type_str)
         except ValueError:
-            thread_type = ThreadType.DISCUSSION
+            thread_type = ThreadType.question
         
-        # Создаём тред
         thread = Thread(
             title=title,
             thread_type=thread_type,
             section_id=section.id,
-            user_id=current_user.id
+            user_id=current_user.id,
+            views=0,
+            is_pinned=False,
+            is_closed=False
         )
         db.session.add(thread)
-        db.session.flush()  # Получаем thread.id
+        db.session.flush()
         
-        # Создаём первый пост
-        post = Post(
-            content=content,
-            thread_id=thread.id,
-            user_id=current_user.id
-        )
+        post = Post(content=content, thread_id=thread.id, user_id=current_user.id, is_solution=False)
         db.session.add(post)
         db.session.commit()
         
-        flash('Тема успешно создана!', 'success')
+        flash('Тема создана', 'success')
         return redirect(url_for('main.view_thread', codename=section.codename, thread_id=thread.id))
     
     return render_template('new_thread.html', section=section)
 
-
 @bp.route('/<string:codename>/<uuid:thread_id>')
 def view_thread(codename, thread_id):
-    """Просмотр конкретного треда со всеми постами"""
-    section = Section.query.filter_by(codename=codename).first_or_404()
+    section = Section.query.filter_by(codename=codename, is_visible=True).first_or_404()
     thread = Thread.query.filter_by(id=thread_id, section_id=section.id).first_or_404()
     
-    # Получаем все посты треда с авторами
+    # Увеличиваем счётчик просмотров
+    thread.views += 1
+    db.session.commit()
+    
     posts = (Post.query
              .filter_by(thread_id=thread.id)
              .order_by(Post.created_at)
              .all())
     
-    # Преобразуем markdown в HTML для каждого поста
+    # Рейтинг каждого поста
     for post in posts:
+        post.rating_count = get_post_rating(post.id)
         post.html_content = markdown.markdown(post.content, extensions=['fenced_code', 'codehilite'])
     
-    # Считаем рейтинг треда (пока заглушка)
-    rating_count = 0
+    thread_rating = get_thread_rating(thread.id)
     
-    return render_template('thread.html', 
-                         section=section, 
-                         thread=thread, 
-                         posts=posts, 
-                         rating_count=rating_count)
+    return render_template('thread.html',
+                           section=section,
+                           thread=thread,
+                           posts=posts,
+                           thread_rating=thread_rating)
+
+@bp.route('/<string:codename>/<uuid:thread_id>/reply', methods=['POST'])
+@login_required
+def reply_to_thread(codename, thread_id):
+    section = Section.query.filter_by(codename=codename, is_visible=True).first_or_404()
+    thread = Thread.query.filter_by(id=thread_id, section_id=section.id).first_or_404()
+    
+    content = request.form.get('content', '').strip()
+    if not content or len(content) < 3:
+        flash('Ответ минимум 3 символа', 'danger')
+        return redirect(url_for('main.view_thread', codename=section.codename, thread_id=thread.id))
+    
+    post = Post(content=content, thread_id=thread.id, user_id=current_user.id, is_solution=False)
+    db.session.add(post)
+    db.session.commit()
+    flash('Ответ добавлен', 'success')
+    return redirect(url_for('main.view_thread', codename=section.codename, thread_id=thread.id))
+
+@bp.route('/vote', methods=['POST'])
+@login_required
+def vote():
+    """Голосование за пост (только +1), возвращает JSON"""
+    post_id = request.form.get('post_id')
+    if not post_id:
+        return jsonify({'error': 'Не указан пост'}), 400
+    
+    post = Post.query.get_or_404(post_id)
+    
+    # Проверяем, не голосовал ли уже
+    existing = Rating.query.filter_by(user_id=current_user.id, target_id=post.id).first()
+    if existing:
+        return jsonify({'error': 'Вы уже голосовали за этот пост'}), 400
+    
+    rating = Rating(user_id=current_user.id, target_id=post.id)
+    db.session.add(rating)
+    db.session.commit()
+    
+    new_count = get_post_rating(post.id)
+    return jsonify({'success': True, 'new_rating': new_count})

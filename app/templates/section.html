@@ -59,7 +59,8 @@
             
             <div class="thread-actions">
                 <a href="{{ url_for('main.view_thread', codename=section.codename, thread_id=thread_data.thread.id) }}" class="btn-reply">💬 Ответить</a>
-                <button class="btn-upvote" data-target="thread" data-id="{{ thread_data.thread.id }}">👍 {{ thread_data.rating_count }}</button>
+                <span class="upvote-total">👍 {{ thread_data.rating_sum }}</span>
+                <button class="btn-upvote" data-target="thread" data-id="{{ thread_data.thread.id }}">Апвоут</button>
             </div>
         </article>
         {% else %}
@@ -74,7 +75,6 @@
             <li>
                 <span class="user-rank-number">{{ loop.index }}.</span>
                 <a href="#">{{ user.username }}</a>
-                <span class="post-count">{{ post_count }} постов</span>
             </li>
             {% else %}
             <li>Нет данных</li>

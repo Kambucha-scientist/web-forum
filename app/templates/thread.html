@@ -35,7 +35,9 @@
             </div>
             {% if current_user.is_authenticated %}
             <div class="post-actions">
-                <button class="btn-upvote" data-target="post" data-id="{{ post.id }}">👍 Апвоут</button>
+                <button class="vote-btn" data-post-id="{{ post.id }}">
+                    👍 <span class="vote-count">{{ post.rating_count }}</span>
+                </button>
             </div>
             {% endif %}
         </div>

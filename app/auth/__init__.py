@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
 from app import db
-from app.models import User
+from app.models import User, UserRole
 import re
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -69,7 +69,7 @@ def register():
             for err in errors:
                 flash(err, 'danger')
         else:
-            user = User(username=username, email=email)
+            user = User(username=username, email=email, role=UserRole.USER, is_active=True)
             user.set_password(password)
             db.session.add(user)
             db.session.commit()

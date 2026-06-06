@@ -8,21 +8,37 @@
     
     <form method="POST" class="section-form">
         <div class="form-group">
-            <label for="name">Название раздела *</label>
-            <input type="text" name="name" id="name" required value="{{ section.name if section else '' }}">
+            <label for="title">Название раздела *</label>
+            <input type="text" name="title" id="title" required value="{{ section.title if section else '' }}">
             <small>Отображается на сайте (например, "Python")</small>
         </div>
         
         <div class="form-group">
             <label for="codename">Кодовое имя (URL) *</label>
             <input type="text" name="codename" id="codename" required value="{{ section.codename if section else '' }}" pattern="[a-z0-9_-]+">
-            <small>Будет в URL: <code>/<span id="codename-preview">{{ section.codename if section else 'раздел' }}</span></code>. Только латиница, цифры, _ и -</small>
+            <small>Будет в URL: <code>/<span id="codename-preview">{{ section.codename if section else 'razdel' }}</span></code>. Только латиница, цифры, _ и -</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="group">Группа *</label>
+            <select name="group" id="group" required>
+                <option value="language" {% if section and section.group.value == 'language' %}selected{% endif %}>Язык программирования</option>
+                <option value="DB" {% if section and section.group.value == 'DB' %}selected{% endif %}>База данных</option>
+                <option value="AOB" {% if section and section.group.value == 'AOB' %}selected{% endif %}>Разное (AOB)</option>
+            </select>
         </div>
         
         <div class="form-group">
             <label for="description">Описание</label>
             <textarea name="description" id="description" rows="3">{{ section.description if section else '' }}</textarea>
             <small>Краткое описание раздела (необязательно)</small>
+        </div>
+        
+        <div class="form-group checkbox">
+            <label>
+                <input type="checkbox" name="is_visible" {% if not section or section.is_visible %}checked{% endif %}>
+                Раздел видим на сайте
+            </label>
         </div>
         
         <div class="form-actions">
@@ -33,12 +49,11 @@
 </div>
 
 <script>
-    // Живой предпросмотр URL
     const codenameInput = document.getElementById('codename');
     const previewSpan = document.getElementById('codename-preview');
     if (codenameInput) {
         codenameInput.addEventListener('input', function() {
-            previewSpan.textContent = this.value || 'раздел';
+            previewSpan.textContent = this.value || 'razdel';
         });
     }
 </script>
