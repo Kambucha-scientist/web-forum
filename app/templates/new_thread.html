@@ -6,7 +6,7 @@
 <div class="form-container">
     <h1>Новая тема в разделе «{{ section.title }}»</h1>
     
-    <form method="POST">
+    <form method="POST" enctype="multipart/form-data">
         <div class="form-group">
             <label for="title">Заголовок</label>
             <input type="text" name="title" id="title" required autofocus>
@@ -21,6 +21,12 @@
                 <option value="showcase">✨ Проект или портфолио</option>
                 <option value="resource">📚 Полезный материал</option>
             </select>
+        </div>
+
+        <div class="form-group">
+            <label for="attachment">Вложение (файл)</label>
+            <input type="file" name="attachment" id="attachment">
+            <small>Максимум 16MB. Разрешены: png, jpg, jpeg, gif, txt, pdf, zip</small>
         </div>
         
         <div class="form-group">

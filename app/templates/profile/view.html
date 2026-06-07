@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Профиль {{ user.username }}{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="profile-card">
+        <div class="profile-avatar">
+            {% if avatar_exists %}
+                <img src="{{ avatar_path }}" alt="Avatar" class="avatar-img">
+            {% else %}
+                <div class="avatar-placeholder">👤</div>
+            {% endif %}
+        </div>
+        <div class="profile-info">
+            <h1>{{ user.username }}</h1>
+            <p><strong>Email:</strong> {{ user.email }}</p>
+            <p><strong>Роль:</strong> {{ user.role.value }}</p>
+            <p><strong>Зарегистрирован:</strong> {{ user.created_at.strftime('%d.%m.%Y в %H:%M') }}</p>
+            {% if current_user.id == user.id %}
+                <a href="{{ url_for('profile.edit') }}" class="btn btn-primary">✏️ Редактировать профиль</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

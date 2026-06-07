@@ -47,6 +47,8 @@
                 <td>{{ section.description or '—' }}</td>
                 <td>{{ section.threads|length }}</td>
                 <td class="actions">
+                     <a href="{{ url_for('admin.export_users_ratings', codename=section.codename) }}" class="btn-sm">📊 Пользователи</a>
+                    <a href="{{ url_for('admin.export_threads_ratings', codename=section.codename) }}" class="btn-sm">📊 Треды</a>
                     <a href="{{ url_for('admin.edit_section', section_id=section.id) }}" class="btn-sm">✏️ Ред.</a>
                     <form method="POST" action="{{ url_for('admin.delete_section', section_id=section.id) }}" style="display: inline;">
                         <button type="submit" class="btn-sm btn-danger" onclick="return confirm('Удалить раздел «{{ section.title }}» вместе со всеми темами?')">🗑️ Удалить</button>
@@ -59,6 +61,7 @@
     {% else %}
     <p>Разделов пока нет. Создайте первый раздел!</p>
     {% endif %}
+    
     
     <p><a href="{{ url_for('admin.users') }}" class="btn">← Назад к пользователям</a></p>
 </div>

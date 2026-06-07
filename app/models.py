@@ -111,6 +111,7 @@ class Post(Base):
     thread_id = db.Column(db.UUID(as_uuid=True), db.ForeignKey('threads.id', ondelete='CASCADE'), nullable=False)
     user_id = db.Column(db.UUID(as_uuid=True), db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     content = db.Column(db.Text, nullable=False)
+    attachment = db.Column(db.String(256), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     is_solution = db.Column(db.Boolean, default=False, nullable=False)

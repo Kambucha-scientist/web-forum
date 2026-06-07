@@ -1,8 +1,9 @@
-from flask import Flask
+from flask import Flask, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
 from config import Config
+
 
 
 db = SQLAlchemy()
@@ -33,12 +34,23 @@ def create_app(config_class=Config):
     from app.admin import bp as admin_bp
     app.register_blueprint(admin_bp)
 
+    from app.profile import bp as profile_bp
+    app.register_blueprint(profile_bp)
+
     import os
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     
-    @app.context_processor
-    def inject_current_year():
-        from datetime import datetime
-        return {'current_year': datetime.utcnow().year}
+    @app.route('/uploads/avatars/<path:filename>')
+    def uploaded_avatar(filename):
+        return send_from_directory(os.path.join(app.config['UPLOAD_FOLDER'], 'avatars'), filename)
+    
+    @app.route('/uploads/attachments/<path:filename>')
+    def uploaded_attachment(filename):
+        return send_from_directory(
+            os.path.join(app.config['UPLOAD_FOLDER'], 'attachments'), 
+            filename, 
+            as_attachment=True, 
+            download_name=filename
+        )
     
     return app

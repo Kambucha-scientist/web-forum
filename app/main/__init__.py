@@ -1,11 +1,13 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app
 from flask_login import login_required, current_user
 from app import db
 from app.models import Section, Thread, Post, User, ThreadType, GroupType, Rating
 from sqlalchemy import func, desc
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
+from werkzeug.utils import secure_filename
 import markdown
 import re
+import os
 import math
 from collections import defaultdict
 
@@ -209,6 +211,7 @@ def new_thread(codename):
         content = request.form.get('content', '').strip()
         thread_type_str = request.form.get('thread_type', 'question')
         
+        
         if not title or len(title) < 5:
             flash('Заголовок минимум 5 символов', 'danger')
             return render_template('new_thread.html', section=section)
@@ -216,10 +219,30 @@ def new_thread(codename):
             flash('Содержание минимум 10 символов', 'danger')
             return render_template('new_thread.html', section=section)
         
+        attachment_path = None
+        if 'attachment' in request.files:
+            file = request.files['attachment']
+            if file and file.filename:
+                # Проверка расширения
+                ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+                if ext in current_app.config['ALLOWED_EXTENSIONS']:
+                    # Генерируем уникальное имя
+                    import uuid
+                    filename = secure_filename(f"{uuid.uuid4().hex}_{file.filename}")
+                    attachments_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'attachments')
+                    os.makedirs(attachments_dir, exist_ok=True)
+                    filepath = os.path.join(attachments_dir, filename)
+                    file.save(filepath)
+                    attachment_path = f"/uploads/attachments/{filename}"
+                else:
+                    flash('Недопустимый формат вложения', 'danger')
+                    return render_template('new_thread.html', section=section)
+        
         try:
             thread_type = ThreadType(thread_type_str)
         except ValueError:
             thread_type = ThreadType.question
+        
         
         thread = Thread(
             title=title,
@@ -233,7 +256,7 @@ def new_thread(codename):
         db.session.add(thread)
         db.session.flush()
         
-        post = Post(content=content, thread_id=thread.id, user_id=current_user.id, is_solution=False)
+        post = Post(content=content, thread_id=thread.id, user_id=current_user.id, attachment=attachment_path, is_solution=False)
         db.session.add(post)
         db.session.commit()
         
@@ -280,7 +303,24 @@ def reply_to_thread(codename, thread_id):
         flash('Ответ минимум 3 символа', 'danger')
         return redirect(url_for('main.view_thread', codename=section.codename, thread_id=thread.id))
     
-    post = Post(content=content, thread_id=thread.id, user_id=current_user.id, is_solution=False)
+    attachment_path = None
+    if 'attachment' in request.files:
+        file = request.files['attachment']
+        if file and file.filename:
+            ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+            if ext in current_app.config['ALLOWED_EXTENSIONS']:
+                import uuid
+                filename = secure_filename(f"{uuid.uuid4().hex}_{file.filename}")
+                uploads_dir = current_app.config['UPLOAD_FOLDER']
+                os.makedirs(uploads_dir, exist_ok=True)
+                filepath = os.path.join(uploads_dir, filename)
+                file.save(filepath)
+                attachment_path = f"/uploads/attachments/{filename}"
+            else:
+                flash('Недопустимый формат вложения', 'danger')
+                return redirect(url_for('main.view_thread', codename=section.codename, thread_id=thread.id))
+    
+    post = Post(content=content, thread_id=thread.id, user_id=current_user.id, attachment=attachment_path, is_solution=False)
     db.session.add(post)
     db.session.commit()
     flash('Ответ добавлен', 'success')
