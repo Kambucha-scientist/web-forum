@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from app import db
 from app.main import thread_hot_score, get_thread_rating
 from app.models import User, UserRole, Section, GroupType, Post, Thread, Rating
-from app.decorators import roles_required
+from app.decorators import admin_required, moderator_required, post_owner_or_moderator
 from sqlalchemy import func
 import re
 import csv
@@ -16,14 +16,14 @@ bp = Blueprint('admin', __name__, url_prefix='/admin')
 
 @bp.route('/users')
 @login_required
-@roles_required('admin')
+@admin_required
 def users():
     all_users = User.query.order_by(User.created_at).all()
     return render_template('admin/users.html', users=all_users, roles=UserRole)
 
 @bp.route('/users/<uuid:user_id>/promote', methods=['POST'])
 @login_required
-@roles_required('admin')
+@admin_required
 def promote_user(user_id):
     user = User.query.get_or_404(user_id)
     new_role_name = request.form.get('role')
@@ -42,14 +42,14 @@ def promote_user(user_id):
 
 @bp.route('/sections')
 @login_required
-@roles_required('admin')
+@admin_required
 def sections():
     all_sections = Section.query.order_by(Section.title).all()
     return render_template('admin/sections.html', sections=all_sections)
 
 @bp.route('/sections/new', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin')
+@admin_required
 def new_section():
     if request.method == 'POST':
         title = request.form.get('title', '').strip()
@@ -91,7 +91,7 @@ def new_section():
 
 @bp.route('/sections/<uuid:section_id>/edit', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin')
+@admin_required
 def edit_section(section_id):
     section = Section.query.get_or_404(section_id)
     if request.method == 'POST':
@@ -130,7 +130,7 @@ def edit_section(section_id):
 
 @bp.route('/sections/<uuid:section_id>/delete', methods=['POST'])
 @login_required
-@roles_required('admin')
+@admin_required
 def delete_section(section_id):
     section = Section.query.get_or_404(section_id)
     name = section.title
@@ -142,9 +142,89 @@ def delete_section(section_id):
     flash(f'Раздел "{name}" удалён', 'success')
     return redirect(url_for('admin.sections'))
 
+@bp.route('/<string:codename>/<uuid:thread_id>/pin', methods=['POST'])
+@login_required
+@moderator_required
+def toggle_pin(codename, thread_id):
+    """Закрепить/открепить тему"""
+    section = Section.query.filter_by(codename=codename).first_or_404()
+    thread = Thread.query.filter_by(id=thread_id, section_id=section.id).first_or_404()
+    thread.is_pinned = not thread.is_pinned
+    db.session.commit()
+    flash('Статус закрепления изменён.', 'success')
+    return redirect(url_for('main.section_by_codename', codename=section.codename))
+
+@bp.route('/<string:codename>/<uuid:thread_id>/close', methods=['POST'])
+@login_required
+@moderator_required
+def toggle_close(codename, thread_id):
+    """Закрыть/открыть тему (в закрытую нельзя отвечать)"""
+    section = Section.query.filter_by(codename=codename).first_or_404()
+    thread = Thread.query.filter_by(id=thread_id, section_id=section.id).first_or_404()
+    thread.is_closed = not thread.is_closed
+    db.session.commit()
+    flash('Статус темы изменён.', 'success')
+    return redirect(url_for('main.section_by_codename', codename=section.codename))
+
+@bp.route('/<string:codename>/<uuid:thread_id>/delete', methods=['POST'])
+@login_required
+@moderator_required
+def delete_thread(codename, thread_id):
+    """Удалить тему со всеми постами"""
+    section = Section.query.filter_by(codename=codename).first_or_404()
+    thread = Thread.query.filter_by(id=thread_id, section_id=section.id).first_or_404()
+    db.session.delete(thread)
+    db.session.commit()
+    flash('Тема удалена.', 'success')
+    return redirect(url_for('main.section_by_codename', codename=section.codename))
+
+@bp.route('/<string:codename>/<uuid:thread_id>/edit_post/<uuid:post_id>', methods=['GET', 'POST'])
+@login_required
+@post_owner_or_moderator
+def edit_post(codename, thread_id, post_id):
+    """Редактирование поста (для модератора/админа)"""
+    section = Section.query.filter_by(codename=codename).first_or_404()
+    thread = Thread.query.filter_by(id=thread_id, section_id=section.id).first_or_404()
+    post = Post.query.filter_by(id=post_id, thread_id=thread.id).first_or_404()
+    
+    if request.method == 'POST':
+        new_content = request.form.get('content', '').strip()
+        if not new_content or len(new_content) < 3:
+            flash('Содержание поста не может быть пустым.', 'danger')
+            return render_template('edit_post.html', post=post, thread=thread, section=section)
+        post.content = new_content
+        db.session.commit()
+        flash('Пост отредактирован.', 'success')
+        return redirect(url_for('main.view_thread', codename=section.codename, thread_id=thread.id))
+    
+    return render_template('edit_post.html', post=post, thread=thread, section=section)
+
+@bp.route('/<string:codename>/<uuid:thread_id>/delete_post/<uuid:post_id>', methods=['POST'])
+@login_required
+@post_owner_or_moderator
+def delete_post(codename, thread_id, post_id):
+    """Удаление поста"""
+    section = Section.query.filter_by(codename=codename).first_or_404()
+    thread = Thread.query.filter_by(id=thread_id, section_id=section.id).first_or_404()
+    post = Post.query.filter_by(id=post_id, thread_id=thread.id).first_or_404()
+    
+    first_post = Post.query.filter_by(thread_id=thread.id).order_by(Post.created_at).first()
+
+    if post.id == first_post.id:
+        db.session.delete(thread)
+        db.session.commit()
+        flash('Удалён первый пост, поэтому тема удалена целиком.', 'warning')
+        return redirect(url_for('main.section_by_codename', codename=section.codename))
+    else:
+        db.session.delete(post)
+        db.session.commit()
+        flash('Пост удалён.', 'success')
+        return redirect(url_for('main.view_thread', codename=section.codename, thread_id=thread.id))
+ 
+
 @bp.route('/export/users/<string:codename>')
 @login_required
-@roles_required('admin')
+@admin_required
 def export_users_ratings(codename):
     section = Section.query.filter_by(codename=codename).first_or_404()
     
@@ -205,7 +285,7 @@ def export_users_ratings(codename):
 
 @bp.route('/export/threads/<string:codename>')
 @login_required
-@roles_required('admin')
+@admin_required
 def export_threads_ratings(codename):
     section = Section.query.filter_by(codename=codename).first_or_404()
     now = datetime.utcnow()

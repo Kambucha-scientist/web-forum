@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Редактирование поста{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h1>Редактирование поста в теме «{{ thread.title }}»</h1>
+    <form method="POST">
+        <div class="form-group">
+            <label for="content">Содержание (Markdown)</label>
+            <textarea name="content" id="content" rows="10" required>{{ post.content }}</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Сохранить</button>
+        <a href="{{ url_for('main.view_thread', codename=section.codename, thread_id=thread.id) }}" class="btn">Отмена</a>
+    </form>
+</div>
+{% endblock %}

@@ -30,6 +30,16 @@
                 <strong>{{ post.author.username }}</strong>
                 <span class="post-date">{{ post.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
             </div>
+            {% if current_user.is_authenticated and (current_user.id == post.user_id or current_user.role.name in ('MODERATOR', 'ADMIN')) %}
+                <div class="post-mod-actions">
+                    <a href="{{ url_for('admin.edit_post', codename=section.codename, thread_id=thread.id, post_id=post.id) }}" class="btn-sm">✏️ Редактировать</a>
+                    {% if current_user.role.name in ('MODERATOR', 'ADMIN') %}
+                    <form method="POST" action="{{ url_for('admin.delete_post', codename=section.codename, thread_id=thread.id, post_id=post.id) }}" style="display: inline;">
+                        <button type="submit" class="btn-sm btn-danger" onclick="return confirm('Удалить этот пост?')">🗑️ Удалить</button>
+                    </form>
+                    {% endif %}
+            </div>
+            {% endif %}            
             {% if post.attachment %}
                 <div class="post-attachment">
                     <a href="{{ post.attachment }}" target="_blank">📎 Скачать вложение</a>
@@ -49,19 +59,22 @@
         {% endfor %}
     </div>
 
-    {% if current_user.is_authenticated %}
+    {% if current_user.is_authenticated and (not thread.is_closed or current_user.role.name in ('MODERATOR', 'ADMIN')) %}
     <div class="reply-form">
         <h3>Ответить в тему</h3>
-        <form method="POST" enctype="multipart/form-data" action="{{ url_for('main.reply_to_thread', codename=section.codename, thread_id=thread.id) }} ">
+        <form method="POST" action="{{ url_for('main.reply_to_thread', codename=section.codename, thread_id=thread.id) }}" enctype="multipart/form-data">
             <textarea name="content" rows="6" placeholder="Введите ответ в формате Markdown..."></textarea>
+            <div class="form-group">
+                <label for="attachment">Вложение (файл)</label>
+                <input type="file" name="attachment">
+            </div>
             <button type="submit" class="btn btn-primary">Отправить</button>
         </form>
-        <small>Поддерживается Markdown: **жирный**, *курсив*, ```код```</small>
     </div>
+    {% elif thread.is_closed %}
+    <p class="warning">🔒 Тема закрыта для ответов.</p>
     {% else %}
-    <div class="login-prompt">
-        <p><a href="{{ url_for('auth.login') }}">Войдите</a>, чтобы ответить в тему.</p>
-    </div>
+    <p><a href="{{ url_for('auth.login') }}">Войдите</a>, чтобы ответить.</p>
     {% endif %}
 </div>
 {% endblock %}

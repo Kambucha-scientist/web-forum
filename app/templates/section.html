@@ -27,7 +27,11 @@
                     {% else %}
                         <span class="badge discussion">Обсуждение</span>
                     {% endif %}
+                    {% if thread_data.thread.is_closed %}
+                    <span class="badge closed">🔒 Закрыта</span>
+                    {% endif %}
                 </h3>
+                
                 <div class="thread-meta">
                     Автор: <a href="#">{{ thread_data.thread.author.username }}</a>
                     • {{ thread_data.thread.created_at.strftime('%d.%m.%Y') }}
@@ -58,6 +62,23 @@
             </div>
             
             <div class="thread-actions">
+                {% if current_user.is_authenticated and current_user.role.name in ('MODERATOR', 'ADMIN') %}
+                    <div class="mod-actions">
+                        <form method="POST" action="{{ url_for('admin.toggle_pin', codename=section.codename, thread_id=thread_data.thread.id) }}" style="display: inline;">
+                            <button type="submit" class="btn-mod">
+                                {% if thread_data.thread.is_pinned %}📌 Открепить{% else %}📌 Закрепить{% endif %}
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ url_for('admin.toggle_close', codename=section.codename, thread_id=thread_data.thread.id) }}" style="display: inline;">
+                            <button type="submit" class="btn-mod">
+                                {% if thread_data.thread.is_closed %}🔓 Открыть{% else %}🔒 Закрыть{% endif %}
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ url_for('admin.delete_thread', codename=section.codename, thread_id=thread_data.thread.id) }}" style="display: inline;">
+                            <button type="submit" class="btn-mod btn-danger" onclick="return confirm('Удалить тему «{{ thread_data.thread.title }}» со всеми постами?')">🗑️ Удалить тему</button>
+                        </form>
+                    </div>
+                {% endif %}
                 <a href="{{ url_for('main.view_thread', codename=section.codename, thread_id=thread_data.thread.id) }}" class="btn-reply">💬 Ответить</a>
                 <span class="upvote-total">👍 {{ thread_data.rating_sum }}</span>
                 <button class="btn-upvote" data-target="thread" data-id="{{ thread_data.thread.id }}">Апвоут</button>

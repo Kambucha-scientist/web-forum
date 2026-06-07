@@ -76,7 +76,7 @@ def index():
             upvotes_per_thread[tid] += 1
     
     # Все треды
-    all_threads = Thread.query.filter_by(is_closed=False).all()
+    all_threads = Thread.query.all()
     hot_list = []
     
     for thread in all_threads:
@@ -110,7 +110,7 @@ def section_by_codename(codename):
     section = Section.query.filter_by(codename=codename, is_visible=True).first_or_404()
     
     # Все треды раздела (не закрытые)
-    threads = Thread.query.filter_by(section_id=section.id, is_closed=False)\
+    threads = Thread.query.filter_by(section_id=section.id)\
                          .order_by(Thread.is_pinned.desc(), Thread.created_at.desc()).all()
     
     # Получаем ID всех тредов
@@ -297,6 +297,10 @@ def view_thread(codename, thread_id):
 def reply_to_thread(codename, thread_id):
     section = Section.query.filter_by(codename=codename, is_visible=True).first_or_404()
     thread = Thread.query.filter_by(id=thread_id, section_id=section.id).first_or_404()
+
+    if thread.is_closed and current_user.role.name not in ('MODERATOR', 'ADMIN'):
+        flash('Тема закрыта. Только модераторы могут отвечать.', 'danger')
+        return redirect(url_for('main.view_thread', codename=section.codename, thread_id=thread.id))
     
     content = request.form.get('content', '').strip()
     if not content or len(content) < 3:
