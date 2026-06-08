@@ -44,7 +44,22 @@ def get_thread_rating(thread_id):
 @bp.route('/')
 @bp.route('/index')
 def index():
-    sections = Section.query.filter_by(is_visible=True).order_by(Section.title).all()
+    sections = Section.query.filter_by(is_visible=True).all()
+    
+    sections_by_group = {
+        'language': [],
+        'DB': [],
+        'AOB': []
+    }
+    
+    for section in sections:
+        group_name = section.group.name if hasattr(section.group, 'name') else str(section.group)
+        if group_name in sections_by_group:
+            sections_by_group[group_name].append(section)
+    
+    for group in sections_by_group:
+        sections_by_group[group].sort(key=lambda x: x.title)
+
     now = datetime.utcnow()
     day_ago = now - timedelta(hours=24)
     
@@ -75,7 +90,6 @@ def index():
         if tid:
             upvotes_per_thread[tid] += 1
     
-    # Все треды
     all_threads = Thread.query.all()
     hot_list = []
     
@@ -96,14 +110,12 @@ def index():
             rating_sum = get_thread_rating(thread.id)
         
         score = thread_hot_score(U, M, L, A)
-        # Сохраняем кортеж: (thread, posts_count, rating_sum, score)
         hot_list.append((thread, posts_count, rating_sum, score))
     
-    # Сортируем по score и берём топ-5
     hot_list.sort(key=lambda x: x[3], reverse=True)
     hot_threads = hot_list[:5]   # каждый элемент: (thread, posts_count, rating_sum, score)
     
-    return render_template('index.html', sections=sections, hot_threads=hot_threads)
+    return render_template('index.html', sections_by_group=sections_by_group, hot_threads=hot_threads)
 
 @bp.route('/<string:codename>')
 def section_by_codename(codename):

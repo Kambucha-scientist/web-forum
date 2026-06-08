@@ -3,40 +3,84 @@
 {% block title %}Главная — CodeForum{% endblock %}
 
 {% block content %}
-<div class="home-layout">
-    <aside class="sections-list">
-        <h2>Разделы форума</h2>
-        <ul class="sections">
-            {% for section in sections %}
-            <li>
-                <a href="{{ url_for('main.section_by_codename', codename=section.codename) }}" class="section-link">
-                    <strong>{{ section.title }}</strong>
-                    <span class="section-desc">{{ section.description }}</span>
+<div class="main-container">
+    <!-- Левая колонка с разделами -->
+    <div class="sections-column">
+        {% if sections_by_group['language'] %}
+        <div class="group-section">
+            <div class="group-title">📚 Языки программирования</div>
+            <ul class="section-list">
+                {% for section in sections_by_group['language'] %}
+                <li class="section-item">
+                    <a href="{{ url_for('main.section_by_codename', codename=section.codename) }}" class="section-link">
+                        <div class="section-name">{{ section.title }}</div>
+                        {% if section.description %}
+                        <div class="section-description">{{ section.description }}</div>
+                        {% endif %}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        
+        {% if sections_by_group['DB'] %}
+        <div class="group-section">
+            <div class="group-title">💾 Базы данных</div>
+            <ul class="section-list">
+                {% for section in sections_by_group['DB'] %}
+                <li class="section-item">
+                    <a href="{{ url_for('main.section_by_codename', codename=section.codename) }}" class="section-link">
+                        <div class="section-name">{{ section.title }}</div>
+                        {% if section.description %}
+                        <div class="section-description">{{ section.description }}</div>
+                        {% endif %}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        
+        {% if sections_by_group['AOB'] %}
+        <div class="group-section">
+            <div class="group-title">🌐 Разное</div>
+            <ul class="section-list">
+                {% for section in sections_by_group['AOB'] %}
+                <li class="section-item">
+                    <a href="{{ url_for('main.section_by_codename', codename=section.codename) }}" class="section-link">
+                        <div class="section-name">{{ section.title }}</div>
+                        {% if section.description %}
+                        <div class="section-description">{{ section.description }}</div>
+                        {% endif %}
+                    </a>
+                </li>
+                {% else %}
+                <li class="empty-group">В этой группе пока нет разделов</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Правая колонка с горячими темами -->
+    <div class="hot-topics">
+        <div class="hot-icon">🔥</div>
+        <div class="hot-title">Самое обсуждаемое</div>
+        <ul class="hot-list">
+            {% for thread_data in hot_threads %}
+            <li class="hot-item">
+                <a href="{{ url_for('main.view_thread', codename=thread_data[0].section.codename, thread_id=thread_data[0].id) }}">
+                    {{ thread_data[0].title|truncate(35, True, '...', 0) }}
                 </a>
+                <div class="hot-stats">
+                    💬 {{ thread_data[1] }} ответов • 👍 {{ thread_data[2] }}
+                </div>
             </li>
             {% else %}
-            <li>Разделов пока нет</li>
+            <li class="empty-group">Пока нет активных тем</li>
             {% endfor %}
         </ul>
-    </aside>
-
-    <aside class="hot-threads">
-    <h2>🔥 Горячие обсуждения</h2>
-    <ul class="hot-list">
-        {% for thread_data in hot_threads %}
-        {# thread_data = (thread, posts_count, rating_sum, score) #}
-        <li>
-            <a href="{{ url_for('main.view_thread', codename=thread_data[0].section.codename, thread_id=thread_data[0].id) }}" class="hot-title">
-                {{ thread_data[0].title }}
-            </a>
-            <div class="hot-meta">
-                {{ thread_data[1] }} ответов • 👍 {{ thread_data[2] }}
-            </div>
-        </li>
-        {% else %}
-        <li>Пока нет активных тем</li>
-        {% endfor %}
-    </ul>
-</aside>
+    </div>
 </div>
 {% endblock %}
