@@ -61,7 +61,7 @@ def new_section():
         errors = []
         if not title or len(title) < 3:
             errors.append('Название минимум 3 символа')
-        if not codename or len(codename) < 2 or not re.match(r'^[a-z0-9_-]+$', codename):
+        if not codename or not re.match(r'^[a-z0-9_-]+$', codename):
             errors.append('Кодовое имя (латиница, цифры, _, -)')
         if Section.query.filter_by(codename=codename).first():
             errors.append(f'Кодовое имя "{codename}" уже занято')

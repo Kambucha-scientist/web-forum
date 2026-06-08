@@ -4,11 +4,11 @@
 
 {% block content %}
 <div class="admin-tabs">
-    <a href="{{ url_for('admin.users') }}" class="tab {% if request.endpoint == 'admin.users' %}active{% endif %}">👥 Пользователи</a>
-    <a href="{{ url_for('admin.sections') }}" class="tab {% if request.endpoint == 'admin.sections' %}active{% endif %}">📁 Разделы</a>
+    <a href="{{ url_for('admin.users') }}" class="tab {% if request.endpoint == 'admin.users' %}active{% endif %}"><i class="fa-solid fa-users"></i> Пользователи</a>
+    <a href="{{ url_for('admin.sections') }}" class="tab {% if request.endpoint == 'admin.sections' %}active{% endif %}"><i class="fa-solid fa-folder-open"></i> Разделы</a>
 </div>
 <div class="admin-container">
-    <h1>👥 Управление пользователями</h1>
+    <h1><i class="fa-solid fa-users"></i> Управление пользователями</h1>
     <p>Вы можете изменять роли пользователей (user, moderator, admin).</p>
     
     <table class="users-table">

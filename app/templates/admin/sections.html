@@ -4,14 +4,14 @@
 
 {% block content %}
 <div class="admin-tabs">
-    <a href="{{ url_for('admin.users') }}" class="tab {% if request.endpoint == 'admin.users' %}active{% endif %}">👥 Пользователи</a>
-    <a href="{{ url_for('admin.sections') }}" class="tab {% if request.endpoint == 'admin.sections' %}active{% endif %}">📁 Разделы</a>
+    <a href="{{ url_for('admin.users') }}" class="tab {% if request.endpoint == 'admin.users' %}active{% endif %}"><i class="fa-solid fa-users"></i> Пользователи</a>
+    <a href="{{ url_for('admin.sections') }}" class="tab {% if request.endpoint == 'admin.sections' %}active{% endif %}"><i class="fa-solid fa-folder-open"></i> Разделы</a>
 </div>
 
 <div class="admin-container">
     <div class="admin-header">
-        <h1>📁 Управление разделами</h1>
-        <a href="{{ url_for('admin.new_section') }}" class="btn btn-primary">➕ Создать раздел</a>
+        <h1><i class="fa-solid fa-folder-open"></i> Управление разделами</h1>
+        <a href="{{ url_for('admin.new_section') }}" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Создать раздел</a>
     </div>
     
     {% if sections %}
@@ -39,19 +39,19 @@
                 </td>
                 <td>
                     {% if section.is_visible %}
-                        <span class="visible-badge visible-yes">✅ да</span>
+                        <span class="visible-badge visible-yes"><i class="fa-solid fa-check"></i> да</span>
                     {% else %}
-                        <span class="visible-badge visible-no">❌ нет</span>
+                        <span class="visible-badge visible-no"><i class="fa-solid fa-x"></i> нет</span>
                     {% endif %}
                  </td>
                 <td>{{ section.description or '—' }}</td>
                 <td>{{ section.threads|length }}</td>
                 <td class="actions">
-                     <a href="{{ url_for('admin.export_users_ratings', codename=section.codename) }}" class="btn-sm">📊 Пользователи</a>
-                    <a href="{{ url_for('admin.export_threads_ratings', codename=section.codename) }}" class="btn-sm">📊 Треды</a>
-                    <a href="{{ url_for('admin.edit_section', section_id=section.id) }}" class="btn-sm">✏️ Ред.</a>
+                     <a href="{{ url_for('admin.export_users_ratings', codename=section.codename) }}" class="btn-sm"><i class="fa-solid fa-chart-simple"></i> Пользователи</a>
+                    <a href="{{ url_for('admin.export_threads_ratings', codename=section.codename) }}" class="btn-sm"><i class="fa-solid fa-chart-simple"></i> Треды</a>
+                    <a href="{{ url_for('admin.edit_section', section_id=section.id) }}" class="btn-sm"><i class="fa-solid fa-pen"></i> Ред.</a>
                     <form method="POST" action="{{ url_for('admin.delete_section', section_id=section.id) }}" style="display: inline;">
-                        <button type="submit" class="btn-sm btn-danger" onclick="return confirm('Удалить раздел «{{ section.title }}» вместе со всеми темами?')">🗑️ Удалить</button>
+                        <button type="submit" class="btn-sm btn-danger" onclick="return confirm('Удалить раздел «{{ section.title }}» вместе со всеми темами?')"><i class="fa-regular fa-trash-can"></i> Удалить</button>
                     </form>
                 </td>
             </tr>

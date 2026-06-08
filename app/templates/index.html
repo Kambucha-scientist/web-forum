@@ -8,7 +8,7 @@
     <div class="sections-column">
         {% if sections_by_group['language'] %}
         <div class="group-section">
-            <div class="group-title">📚 Языки программирования</div>
+            <div class="group-title"><i class="fa-solid fa-code"></i> Языки программирования</div>
             <ul class="section-list">
                 {% for section in sections_by_group['language'] %}
                 <li class="section-item">
@@ -26,7 +26,7 @@
         
         {% if sections_by_group['DB'] %}
         <div class="group-section">
-            <div class="group-title">💾 Базы данных</div>
+            <div class="group-title"><i class="fa-solid fa-database"></i> Базы данных</div>
             <ul class="section-list">
                 {% for section in sections_by_group['DB'] %}
                 <li class="section-item">
@@ -44,7 +44,7 @@
         
         {% if sections_by_group['AOB'] %}
         <div class="group-section">
-            <div class="group-title">🌐 Разное</div>
+            <div class="group-title"><i class="fa-solid fa-magnifying-glass"></i> Разное</div>
             <ul class="section-list">
                 {% for section in sections_by_group['AOB'] %}
                 <li class="section-item">
@@ -76,7 +76,7 @@
                     {{ thread_data[0].title|truncate(35, True, '...', 0) }}
                 </a>
                 <div class="hot-stats">
-                    💬 {{ thread_data[1] }} ответов • 👍 {{ thread_data[2] }}
+                    <i class="fa-regular fa-comment-dots"></i> {{ thread_data[1] }} ответов • <i class="fa-solid fa-up-long"></i> {{ thread_data[2] }}
                 </div>
             </li>
             {% else %}
