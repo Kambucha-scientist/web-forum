@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ thread.title }} — {{ section.name }}{% endblock %}
+{% block title %}{{ thread.title }} — {{ section.title }}{% endblock %}
 
 {% block head_extra %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
@@ -9,72 +9,158 @@
 {% endblock %}
 
 {% block content %}
-<div class="thread-container">
+
+<section class="thread-page">
+    <!-- Навигация -->
+    <a href="{{ url_for('main.section_by_codename', codename=section.codename) }}" class="back-link">
+       <i class="fa-solid fa-arrow-left"></i>
+    </a>
+
+    <!-- Заголовок треда -->
     <div class="thread-header">
-        <a href="{{ url_for('main.section_by_codename', codename=section.codename) }}" class="back-link">
-            ← Назад к {{ section.name }}
-        </a>
-        <h1>{{ thread.title }}</h1>
-        <div class="thread-meta">
-            <span>Автор: {{ thread.author.username }}</span>
-            <span>📅 {{ thread.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
-            <span>💬 {{ posts|length }} ответов</span>
-            <span>👍 {{ rating_count }}</span>
+        <h1 class="thread-main-title">{{ thread.title }}</h1>
+        <div class="thread-meta-top">
+            <span class="thread-tag tag-{{ thread.thread_type.name }}">
+                {% if thread.thread_type.name == 'article' %}Статья
+                {% elif thread.thread_type.name == 'question' %}Q&A
+                {% elif thread.thread_type.name == 'discussion' %}Дискуссия
+                {% elif thread.thread_type.name == 'showcase' %}Проект
+                {% elif thread.thread_type.name == 'resource' %}Материал
+                {% endif %}
+            </span>
+            {% if thread.is_closed %}
+                <span class="badge-closed"><i class="fa-solid fa-lock"></i> Закрыта</span>
+            {% endif %}
+            {% if thread.is_pinned %}
+                <span class="badge-pinned"><i class="fa-solid fa-thumbtack"></i> Закреп</span>
+            {% endif %}
+            <span class="thread-stats-inline">
+                <i class="fa-regular fa-comment-dots"></i> {{ posts|length }} ответов • <i class="fa-solid fa-up-long"></i> {{ thread_rating }}
+            </span>
         </div>
     </div>
 
+    <!-- Посты -->
     <div class="posts-list">
         {% for post in posts %}
-        <div class="post-card" id="post-{{ post.id }}">
-            <div class="post-author">
-                <strong>{{ post.author.username }}</strong>
-                <span class="post-date">{{ post.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
-            </div>
-            {% if current_user.is_authenticated and (current_user.id == post.user_id or current_user.role.name in ('MODERATOR', 'ADMIN')) %}
-                <div class="post-mod-actions">
-                    <a href="{{ url_for('admin.edit_post', codename=section.codename, thread_id=thread.id, post_id=post.id) }}" class="btn-sm">✏️ Редактировать</a>
-                    {% if current_user.role.name in ('MODERATOR', 'ADMIN') %}
-                    <form method="POST" action="{{ url_for('admin.delete_post', codename=section.codename, thread_id=thread.id, post_id=post.id) }}" style="display: inline;">
-                        <button type="submit" class="btn-sm btn-danger" onclick="return confirm('Удалить этот пост?')">🗑️ Удалить</button>
-                    </form>
+            <article class="post-card-new {% if loop.first %}first-post{% endif %}">
+                
+                <!-- Шапка поста: автор + дата -->
+                <div class="post-header">
+                    <div class="post-author-info">
+                        <!-- Аватарка с заглушкой (inline, без макроса) -->
+                        <div class="avatar-wrapper post-avatar-wrapper" style="width: 40px; height: 40px;">
+                            <img src="/uploads/avatars/{{ post.author.id }}.png" 
+                                 alt="{{ post.author.username }}" 
+                                 class="avatar-img"
+                                 style="width: 45px; height: 45px;"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <i class="fa-solid fa-circle-user" style="display: none; font-size: 35px;"></i>
+                        </div>
+                        <div class="post-author-details">
+                            <span class="post-author-name">{{ post.author.username }}</span>
+                            <span class="post-date">
+                                {{ post.created_at.strftime('%d.%m.%Y %H:%M') }}
+                                {% if post.is_edited %}
+                                    <span class="edited-badge">(отредактировано)</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Модерские кнопки -->
+                    {% if current_user.is_authenticated and (current_user.id == post.user_id or current_user.role.name in ('MODERATOR', 'ADMIN')) %}
+                        <div class="post-actions-top">
+                            <a href="{{ url_for('admin.edit_post', codename=section.codename, thread_id=thread.id, post_id=post.id) }}" 
+                               class="btn-mod-small" title="Редактировать">
+                                <i class="fa-solid fa-pen"></i> Редактировать
+                            </a>
+                            <form method="POST" action="{{ url_for('admin.delete_post', codename=section.codename, thread_id=thread.id, post_id=post.id) }}" 
+                                  style="display:inline;" onsubmit="return confirm('Удалить пост?');">
+                                <button type="submit" class="btn-mod-small btn-danger-small" title="Удалить">
+                                    <i class="fa-solid fa-trash"></i> Удалить
+                                </button>
+                            </form>
+                        </div>
                     {% endif %}
-            </div>
-            {% endif %}            
-            {% if post.attachment %}
-                <div class="post-attachment">
-                    <a href="{{ post.attachment }}" target="_blank">📎 Скачать вложение</a>
                 </div>
-            {% endif %}
-            <div class="post-content">
-                {{ post.html_content|safe }}
-            </div>
-            {% if current_user.is_authenticated %}
-            <div class="post-actions">
-                <button class="vote-btn" data-post-id="{{ post.id }}">
-                    👍 <span class="vote-count">{{ post.rating_count }}</span>
-                </button>
-            </div>
-            {% endif %}
-        </div>
+
+                <!-- Вложение -->
+                {% if post.attachment %}
+                    {% set ext = post.attachment.rsplit('.', 1)[1]|lower %}
+                    {% if ext in ['png', 'jpg', 'jpeg', 'gif', 'webp'] %}
+                        <div class="post-attachment-img">
+                            <img src="{{ post.attachment }}" alt="Вложение">
+                        </div>
+                    {% else %}
+                        <div class="tc-attachment-file">
+                            <a href="{{ post.attachment }}" class="file-download-link" title="Скачать файл">
+                                {% if ext == 'pdf' %}
+                                    <i class="fa-solid fa-file-pdf" style="color: #dc2626; font-size: 30px;"></i>
+                                {% elif ext == 'txt' %}
+                                    <i class="fa-solid fa-file-lines" style="color: #6b7280; font-size: 30px;"></i>
+                                {% elif ext == 'zip' %}
+                                    <i class="fa-solid fa-file-zipper" style="color: #f59e0b; font-size: 30px;"></i>
+                                {% else %}
+                                    <i class="fa-solid fa-file" style="color: #9ca3af; font-size: 30px;"></i>
+                                {% endif %}
+                                <span> Скачать файл</span>
+                            </a>
+                        </div>
+                    {% endif %}
+                {% endif %}
+
+                <!-- Содержание -->
+                <div class="post-content">
+                    {{ post.html_content|safe }}
+                </div>
+
+                <!-- Футер поста: апвоут -->
+                <div class="post-footer">
+                    {% if current_user.is_authenticated %}
+                        <button class="vote-btn {% if post.user_voted %}voted{% endif %}" 
+                                data-post-id="{{ post.id }}" 
+                                title="Голосовать">
+                            <span class="vote-icon">▲</span>
+                            <span class="vote-count">{{ post.rating_count }}</span>
+                        </button>
+                    {% else %}
+                        <span class="vote-display">
+                            ▲ {{ post.rating_count }}
+                        </span>
+                    {% endif %}
+                </div>
+
+            </article>
         {% endfor %}
     </div>
 
+    <!-- Форма ответа -->
     {% if current_user.is_authenticated and (not thread.is_closed or current_user.role.name in ('MODERATOR', 'ADMIN')) %}
-    <div class="reply-form">
-        <h3>Ответить в тему</h3>
-        <form method="POST" action="{{ url_for('main.reply_to_thread', codename=section.codename, thread_id=thread.id) }}" enctype="multipart/form-data">
-            <textarea name="content" rows="6" placeholder="Введите ответ в формате Markdown..."></textarea>
-            <div class="form-group">
-                <label for="attachment">Вложение (файл)</label>
-                <input type="file" name="attachment">
-            </div>
-            <button type="submit" class="btn btn-primary">Отправить</button>
-        </form>
-    </div>
+        <div class="reply-form-new">
+            <h3>Ответить в тему</h3>
+            <form method="POST" action="{{ url_for('main.reply_to_thread', codename=section.codename, thread_id=thread.id) }}" enctype="multipart/form-data">
+                <div class="form-group">
+                    <textarea name="content" rows="6" placeholder="Напишите ваш ответ..." required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Вложение (файл)</label>
+                    <input type="file" name="attachment" accept=".png,.jpg,.jpeg,.gif,.txt,.pdf,.zip">
+                    <small class="help-text">Максимум 16MB</small>
+                </div>
+                <button type="submit" class="btn btn-primary">Отправить</button>
+            </form>
+        </div>
     {% elif thread.is_closed %}
-    <p class="warning">🔒 Тема закрыта для ответов.</p>
+        <div class="thread-closed-notice">
+            🔒 Тема закрыта для ответов.
+        </div>
     {% else %}
-    <p><a href="{{ url_for('auth.login') }}">Войдите</a>, чтобы ответить.</p>
+        <div class="login-notice">
+            <a href="{{ url_for('auth.login') }}">Войдите</a>, чтобы ответить.
+        </div>
     {% endif %}
-</div>
+
+</section>
+
 {% endblock %}

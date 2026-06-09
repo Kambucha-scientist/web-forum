@@ -2,6 +2,12 @@
 
 {% block title %}{{ section.title }} — CodeForum{% endblock %}
 
+{% block head_extra %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+{% endblock %}
+
 {% block content %}
 
 <section class="section-page">
@@ -73,7 +79,17 @@
                                 </div>
                             {% else %}
                                 <div class="tc-attachment-file">
-                                    📎 <a href="{{ td.first_post_attachment }}">Скачать файл</a>
+                                     <a href="{{ td.first_post_attachment }}" class="file-download-link" title="Скачать файл">
+                                        {% if ext == 'pdf' %}
+                                            <i class="fa-solid fa-file-pdf" style="color: #dc2626; font-size: 30px;"></i>
+                                        {% elif ext == 'txt' %}
+                                            <i class="fa-solid fa-file-lines" style="color: #6b7280; font-size: 30px;"></i>
+                                        {% elif ext == 'zip' %}
+                                            <i class="fa-solid fa-file-zipper" style="color: #f59e0b; font-size: 30px;"></i>
+                                        {% else %}
+                                            <i class="fa-solid fa-file" style="color: #9ca3af; font-size: 30px;"></i>
+                                        {% endif %}
+                                    </a>
                                 </div>
                             {% endif %}
                         {% endif %}
@@ -132,7 +148,19 @@
                                         {% if r_ext in ['png', 'jpg', 'jpeg', 'gif', 'webp'] %}
                                             <img src="{{ reply.attachment }}" class="reply-attachment-img" alt="Вложение">
                                         {% else %}
-                                            <div class="reply-attachment-file">📎 <a href="{{ reply.attachment }}">Файл</a></div>
+                                            <div class="reply-attachment-file">
+                                                <a href="{{ reply.attachment }}">
+                                                    {% if r_ext == 'pdf' %}
+                                                        <i class="fa-solid fa-file-pdf" style="color: #dc2626; font-size: 20px;"></i>
+                                                    {% elif r_ext == 'txt' %}
+                                                        <i class="fa-solid fa-file-lines" style="color: #6b7280; font-size: 20px;"></i>
+                                                    {% elif r_ext == 'zip' %}
+                                                        <i class="fa-solid fa-file-zipper" style="color: #f59e0b; font-size: 20px;"></i>
+                                                    {% else %}
+                                                        <i class="fa-solid fa-file" style="color: #9ca3af; font-size: 20px;"></i>
+                                                    {% endif %}
+                                                </a>
+                                            </div>
                                         {% endif %}
                                     {% endif %}
                                     <div class="reply-content">{{ reply.full_content_html|safe }}</div>

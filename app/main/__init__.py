@@ -160,7 +160,7 @@ def section_by_codename(codename):
         first_post_rating = 0
         
         if first_post:
-            html_content = markdown.markdown(first_post['content'])
+            html_content = markdown.markdown(first_post['content'], extensions=['fenced_code', 'codehilite'])
             preview = truncate_html(html_content, 150)
             first_post_author = user_map.get(first_post['user_id'])
             first_post_attachment = first_post['attachment']
@@ -172,7 +172,7 @@ def section_by_codename(codename):
         last_replies = posts[1:][-3:] if len(posts) > 1 else []
         replies_html = []
         for reply in last_replies:
-            reply_html = markdown.markdown(reply['content'])
+            reply_html = markdown.markdown(reply['content'], extensions=['fenced_code', 'codehilite'])
             replies_html.append({
                 'id': reply['id'],
                 'author': user_map.get(reply['user_id']),
@@ -287,22 +287,25 @@ def view_thread(codename, thread_id):
     section = Section.query.filter_by(codename=codename, is_visible=True).first_or_404()
     thread = Thread.query.filter_by(id=thread_id, section_id=section.id).first_or_404()
     
-    # Увеличиваем счётчик просмотров
-    thread.views += 1
-    db.session.commit()
-    
     posts = (Post.query
              .filter_by(thread_id=thread.id)
              .order_by(Post.created_at)
              .all())
-    
-    # Рейтинг каждого поста
+
+    user_votes = set()
+    if current_user.is_authenticated:
+        user_votes = set(
+            r.target_id for r in Rating.query.filter_by(user_id=current_user.id).all()
+        )
+
     for post in posts:
         post.rating_count = get_post_rating(post.id)
         post.html_content = markdown.markdown(post.content, extensions=['fenced_code', 'codehilite'])
-    
+        post.user_voted = post.id in user_votes
+        post.is_edited = post.updated_at is not None and post.updated_at > post.created_at
+
     thread_rating = get_thread_rating(thread.id)
-    
+
     return render_template('thread.html',
                            section=section,
                            thread=thread,
@@ -332,9 +335,9 @@ def reply_to_thread(codename, thread_id):
             if ext in current_app.config['ALLOWED_EXTENSIONS']:
                 import uuid
                 filename = secure_filename(f"{uuid.uuid4().hex}_{file.filename}")
-                uploads_dir = current_app.config['UPLOAD_FOLDER']
-                os.makedirs(uploads_dir, exist_ok=True)
-                filepath = os.path.join(uploads_dir, filename)
+                attachments_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'attachments')
+                os.makedirs(attachments_dir, exist_ok=True)
+                filepath = os.path.join(attachments_dir, filename)
                 file.save(filepath)
                 attachment_path = f"/uploads/attachments/{filename}"
             else:
@@ -350,21 +353,23 @@ def reply_to_thread(codename, thread_id):
 @bp.route('/vote', methods=['POST'])
 @login_required
 def vote():
-    """Голосование за пост (только +1), возвращает JSON"""
     post_id = request.form.get('post_id')
     if not post_id:
         return jsonify({'error': 'Не указан пост'}), 400
     
     post = Post.query.get_or_404(post_id)
-    
-    # Проверяем, не голосовал ли уже
+
     existing = Rating.query.filter_by(user_id=current_user.id, target_id=post.id).first()
+    
     if existing:
-        return jsonify({'error': 'Вы уже голосовали за этот пост'}), 400
-    
-    rating = Rating(user_id=current_user.id, target_id=post.id)
-    db.session.add(rating)
-    db.session.commit()
-    
-    new_count = get_post_rating(post.id)
-    return jsonify({'success': True, 'new_rating': new_count})
+        db.session.delete(existing)
+        db.session.commit()
+        new_count = get_post_rating(post.id)
+        return jsonify({'success': True, 'new_rating': new_count, 'voted': False})
+    else:
+        # Добавляем голос
+        rating = Rating(user_id=current_user.id, target_id=post.id)
+        db.session.add(rating)
+        db.session.commit()
+        new_count = get_post_rating(post.id)
+        return jsonify({'success': True, 'new_rating': new_count, 'voted': True})

@@ -82,7 +82,7 @@
             {% for thread_data in hot_threads %}
             <li class="hot-item">
                 <a href="{{ url_for('main.view_thread', codename=thread_data[0].section.codename, thread_id=thread_data[0].id) }}">
-                    {{ thread_data[0].title|truncate(35, True, '...', 0) }}
+                    {{ thread_data[0].title|truncate(30, True, '...', 0) }}
                 </a>
                 <div class="thread-section">
                     <a href="{{ url_for('main.section_by_codename', codename=thread_data[0].section.codename) }}"><i>{{ thread_data[0].section.title }}</i></a></p>
