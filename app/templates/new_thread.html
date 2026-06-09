@@ -12,15 +12,25 @@
             <input type="text" name="title" id="title" required autofocus>
         </div>
         
-        <div class="form-group">
-            <label for="thread_type">Тип темы</label>
-            <select name="thread_type" id="thread_type">
-                <option value="question">❓ Вопрос или задача</option>
-                <option value="discussion">💬 Открытое обсуждение</option>
-                <option value="article">📖 Статья или туториал</option>
-                <option value="showcase">✨ Проект или портфолио</option>
-                <option value="resource">📚 Полезный материал</option>
-            </select>
+       <div class="form-group">
+            <label>Тип темы</label>
+            <div class="thread-type-selector">
+                
+                <input type="radio" name="thread_type" id="type_question" value="question" checked>
+                <label for="type_question" class="type-btn tag-question"><i class="fa-solid fa-circle-question"></i> Вопрос или задача</label>
+
+                <input type="radio" name="thread_type" id="type_discussion" value="discussion">
+                <label for="type_discussion" class="type-btn tag-discussion"><i class="fa-solid fa-comments"></i> Открытое обсуждение</label>
+
+                <input type="radio" name="thread_type" id="type_article" value="article">
+                <label for="type_article" class="type-btn tag-article"><i class="fa-solid fa-newspaper"></i> Статья или туториал</label>
+
+                <input type="radio" name="thread_type" id="type_showcase" value="showcase">
+                <label for="type_showcase" class="type-btn tag-showcase"><i class="fa-solid fa-gears"></i> Проект или портфолио</label>
+
+                <input type="radio" name="thread_type" id="type_resource" value="resource">
+                <label for="type_resource" class="type-btn tag-resource"><i class="fa-solid fa-book"></i> Полезный материал</label>
+            </div>
         </div>
 
         <div class="form-group">

@@ -45,8 +45,15 @@ def view(user_id):
 def edit():
     """Редактирование профиля текущего пользователя"""
     if request.method == 'POST':
+        # 1. Если нажата кнопка удаления аватарки, пропускаем валидацию и сразу удаляем
+        if 'delete_avatar' in request.form:
+            delete_avatar(current_user.id)
+            flash('Аватарка удалена!', 'success')
+            return redirect(url_for('profile.edit'))
+        
+        # 2. Обычное сохранение профиля
         username = request.form.get('username', '').strip()
-        email = request.form.get('email', '').strip().lower()
+        
         
         errors = []
         # Валидация имени
@@ -57,11 +64,6 @@ def edit():
         elif username != current_user.username and User.query.filter_by(username=username).first():
             errors.append('Пользователь с таким именем уже существует')
         
-        # Валидация email
-        if not email or '@' not in email:
-            errors.append('Введите корректный email')
-        elif email != current_user.email and User.query.filter_by(email=email).first():
-            errors.append('Пользователь с таким email уже существует')
         
         if errors:
             for err in errors:
@@ -69,16 +71,13 @@ def edit():
         else:
             # Обновляем данные
             current_user.username = username
-            current_user.email = email
             
-            # Обработка аватарки
+            # Обработка загрузки новой аватарки
             if 'avatar' in request.files:
                 file = request.files['avatar']
                 if file and file.filename and allowed_file(file.filename):
-                    # Удаляем старую аватарку
-                    delete_avatar(current_user.id)
-                    # Сохраняем новую
-                    avatar_url = save_avatar(current_user.id, file)
+                    delete_avatar(current_user.id) # Удаляем старую перед сохранением новой
+                    save_avatar(current_user.id, file)
                     flash('Аватарка обновлена!', 'success')
                 elif file and file.filename:
                     flash('Недопустимый формат файла. Разрешены: PNG, JPG, JPEG, GIF', 'danger')
@@ -86,7 +85,10 @@ def edit():
             db.session.commit()
             flash('Профиль успешно обновлён!', 'success')
             return redirect(url_for('profile.view', user_id=current_user.id))
-    
-    # Проверяем наличие текущей аватарки
+
+    # Передаем avatar_path в шаблон для отображения
     avatar_exists = os.path.exists(os.path.join(current_app.config['UPLOAD_FOLDER'], 'avatars', f'{current_user.id}.png'))
-    return render_template('profile/edit.html', user=current_user, avatar_exists=avatar_exists)
+    avatar_path = f'/uploads/avatars/{current_user.id}.png'
+    
+    return render_template('profile/edit.html', user=current_user, avatar_exists=avatar_exists, avatar_path=avatar_path)
+    

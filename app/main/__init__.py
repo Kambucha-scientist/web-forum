@@ -120,26 +120,20 @@ def index():
 @bp.route('/<string:codename>')
 def section_by_codename(codename):
     section = Section.query.filter_by(codename=codename, is_visible=True).first_or_404()
-    
-    # Все треды раздела (не закрытые)
     threads = Thread.query.filter_by(section_id=section.id)\
                          .order_by(Thread.is_pinned.desc(), Thread.created_at.desc()).all()
-    
-    # Получаем ID всех тредов
+
     thread_ids = [t.id for t in threads]
-    
-    # Один запрос: все посты этих тредов с их рейтингами (количество голосов)
-    # Используем LEFT JOIN с подсчётом голосов
+
     posts_with_ratings = db.session.query(
-        Post.id, Post.thread_id, Post.user_id, Post.content, Post.created_at,
+        Post.id, Post.thread_id, Post.user_id, Post.content, Post.created_at, Post.attachment,
         func.count(Rating.id).label('rating_count')
     ).outerjoin(Rating, Rating.target_id == Post.id)\
      .filter(Post.thread_id.in_(thread_ids))\
      .group_by(Post.id)\
      .order_by(Post.created_at)\
      .all()
-    
-    # Группируем посты по тредам
+
     thread_posts = defaultdict(list)
     for p in posts_with_ratings:
         thread_posts[p.thread_id].append({
@@ -147,53 +141,64 @@ def section_by_codename(codename):
             'user_id': p.user_id,
             'content': p.content,
             'created_at': p.created_at,
+            'attachment': p.attachment,
             'rating_count': p.rating_count or 0
         })
-    
-    # Дополнительно получаем авторов тредов (один запрос)
+
     users_ids = set(p.user_id for p in posts_with_ratings) | set(t.user_id for t in threads)
     users = User.query.filter(User.id.in_(users_ids)).all()
     user_map = {u.id: u for u in users}
-    
-    # Формируем threads_data
+
     threads_data = []
     for thread in threads:
         posts = thread_posts.get(thread.id, [])
         first_post = posts[0] if posts else None
+        
         preview = ''
+        first_post_attachment = None
+        first_post_author = None
+        first_post_rating = 0
+        
         if first_post:
             html_content = markdown.markdown(first_post['content'])
             preview = truncate_html(html_content, 150)
-        
+            first_post_author = user_map.get(first_post['user_id'])
+            first_post_attachment = first_post['attachment']
+            first_post_rating = first_post['rating_count']
+
         posts_count = len(posts)
         rating_sum = sum(p['rating_count'] for p in posts)
-        
-        # Последние 3 ответа (исключая первый пост)
+
         last_replies = posts[1:][-3:] if len(posts) > 1 else []
         replies_html = []
         for reply in last_replies:
             reply_html = markdown.markdown(reply['content'])
             replies_html.append({
+                'id': reply['id'],
                 'author': user_map.get(reply['user_id']),
                 'content': truncate_html(reply_html, 100),
-                'created_at': reply['created_at']
+                'full_content_html': reply_html,
+                'created_at': reply['created_at'],
+                'attachment': reply['attachment'],
+                'rating_count': reply['rating_count']
             })
-        
+
         threads_data.append({
             'thread': thread,
             'preview': preview,
             'posts_count': posts_count,
             'rating_sum': rating_sum,
             'last_replies': replies_html,
-            'replies_count': len(last_replies)
+            'replies_count': len(last_replies),
+            'first_post_author': first_post_author,
+            'first_post_attachment': first_post_attachment,
+            'first_post_rating': first_post_rating,
         })
-    
-    # Топ-3 участников по h-index в этом разделе
-    # Собираем все посты с рейтингами для этого раздела
+
     user_post_ratings = defaultdict(list)
     for p in posts_with_ratings:
         user_post_ratings[p.user_id].append(p.rating_count or 0)
-    
+
     def h_index(ratings):
         ratings.sort(reverse=True)
         h = 0
@@ -203,14 +208,14 @@ def section_by_codename(codename):
             else:
                 break
         return h
-    
+
     top_users = []
     for user_id, ratings in user_post_ratings.items():
         h = h_index(ratings)
         top_users.append((user_map.get(user_id), h))
     top_users.sort(key=lambda x: x[1], reverse=True)
     top_users = top_users[:3]
-    
+
     return render_template('section.html', section=section, threads=threads_data, top_users=top_users)
 
 @bp.route('/<string:codename>/new', methods=['GET', 'POST'])

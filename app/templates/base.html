@@ -16,16 +16,15 @@
             </div>
             <nav class="main-nav">
                 <ul>
-                    <li><a href="{{ url_for('main.index') }}">Главная</a></li>
                     {% if current_user.is_authenticated %}
-                        <li><a href="{{ url_for('profile.view', user_id=current_user.id) }}">Профиль ({{ current_user.username }})</a></li>
+                        <li><a href="{{ url_for('profile.view', user_id=current_user.id) }}"><i class="fa-regular fa-circle-user"></i> Профиль ({{ current_user.username }})</a></li>
                         {% if current_user.is_admin() %}
-                            <li><a href="{{ url_for('admin.users') }}">Админ.панель</a></li>
+                            <li><a href="{{ url_for('admin.users') }}"><i class="fa-solid fa-screwdriver-wrench"></i> Админ.панель</a></li>
                         {% endif %}
-                        <li><a href="{{url_for('auth.logout')}}">Выйти</a></li>
+                        <li><a href="{{url_for('auth.logout')}}"><i class="fa-solid fa-arrow-right-from-bracket"></i> Выйти</a></li>
                     {% else %}
-                        <li><a href="{{ url_for('auth.login') }}">Вход</a></li>
-                        <li><a href="{{ url_for('auth.register') }}">Регистрация</a></li>
+                        <li><a href="{{ url_for('auth.login') }}"><i class="fa-solid fa-arrow-right-to-bracket"></i> Вход</a></li>
+                        <li><a href="{{ url_for('auth.register') }}"><i class="fa-regular fa-square-check"></i> Регистрация</a></li>
                     {% endif %}
                 </ul>
             </nav>

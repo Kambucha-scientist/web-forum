@@ -9,16 +9,18 @@
             {% if avatar_exists %}
                 <img src="{{ avatar_path }}" alt="Avatar" class="avatar-img">
             {% else %}
-                <div class="avatar-placeholder">👤</div>
+                <div class="avatar-placeholder"><i class="fa-solid fa-user"></i></div>
             {% endif %}
         </div>
         <div class="profile-info">
             <h1>{{ user.username }}</h1>
             <p><strong>Email:</strong> {{ user.email }}</p>
-            <p><strong>Роль:</strong> {{ user.role.value }}</p>
+            {% if current_user.role.name in ('MODERATOR', 'ADMIN') %}
+            <p><strong>Права:</strong> {{ user.role.value }}</p>
+            {% endif %}
             <p><strong>Зарегистрирован:</strong> {{ user.created_at.strftime('%d.%m.%Y в %H:%M') }}</p>
             {% if current_user.id == user.id %}
-                <a href="{{ url_for('profile.edit') }}" class="btn btn-primary">✏️ Редактировать профиль</a>
+                <a href="{{ url_for('profile.edit') }}" class="btn btn-primary" style="margin-top: 10px;"><i class="fa-solid fa-pen"></i> Редактировать профиль</a>
             {% endif %}
         </div>
     </div>

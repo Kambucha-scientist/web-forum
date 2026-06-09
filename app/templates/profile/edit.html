@@ -13,10 +13,6 @@
             <small>Только латиница, цифры, _ и - (минимум 3 символа)</small>
         </div>
         
-        <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" name="email" id="email" required value="{{ user.email }}">
-        </div>
         
         <div class="form-group">
             <label for="avatar">Аватарка</label>
@@ -25,6 +21,9 @@
                     <img src="{{ url_for('uploaded_avatar', filename=user.id|string + '.png') }}" alt="Текущая аватарка" width="80">
                     <p>Текущая аватарка</p>
                 </div>
+                 <button type="submit" name="delete_avatar" value="1" style="color: #d9534f; background: #fff; border: 1px solid #d9534f; padding: 6px 12px; cursor: pointer; border-radius: 4px; margin-bottom: 10px;">
+                    Удалить аватарку
+                </button>
             {% endif %}
             <input type="file" name="avatar" id="avatar" accept="image/*">
             <small>PNG, JPG, JPEG, GIF (макс. 16MB). Будет преобразовано в PNG.</small>

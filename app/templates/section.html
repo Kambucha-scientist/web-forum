@@ -1,106 +1,219 @@
 {% extends "base.html" %}
 
-{% block title %}{{ section.name }} — CodeForum{% endblock %}
+{% block title %}{{ section.title }} — CodeForum{% endblock %}
 
 {% block content %}
-<div class="section-layout">
-    <main class="threads-list">
-        <div class="section-header">
-            <h1>{{ section.name }}</h1>
-            <p class="section-description">{{ section.description }}</p>
-            {% if current_user.is_authenticated %}
-            <a href="{{ url_for('main.new_thread', codename=section.codename) }}" class="btn btn-primary">➕ Создать тему</a>
-            {% endif %}
-        </div>
 
-        {% for thread_data in threads %}
-        <article class="thread-card">
-            <div class="thread-info">
-                <h3>
-                    <a href="{{ url_for('main.view_thread', codename=section.codename, thread_id=thread_data.thread.id) }}" class="thread-title">
-                        {{ thread_data.thread.title }}
-                    </a>
-                    {% if thread_data.thread.thread_type.value == 'Q&A' %}
-                        <span class="badge qa">Q&A</span>
-                    {% elif thread_data.thread.thread_type.value == 'article' %}
-                        <span class="badge article">Статья</span>
-                    {% else %}
-                        <span class="badge discussion">Обсуждение</span>
-                    {% endif %}
-                    {% if thread_data.thread.is_closed %}
-                    <span class="badge closed">🔒 Закрыта</span>
-                    {% endif %}
-                </h3>
+<section class="section-page">
+    <!-- Шапка раздела -->
+    <div class="section-header-center">
+        <h1 class="section-main-title">{{ section.title }}</h1>
+        {% if section.description %}
+            <p class="section-main-desc">{{ section.description }}</p>
+        {% endif %}
+        {% if current_user.is_authenticated %}
+            <a href="{{ url_for('main.new_thread', codename=section.codename) }}" class="btn btn-primary btn-new-thread">
+                 Создать тему
+            </a>
+        {% endif %}
+    </div>
+
+    <!-- Основная сетка: треды + топ постеров -->
+    <div class="section-grid">
+        
+        <!-- Левая колонка: треды (2/3) -->
+        <div class="threads-column">
+            
+            {% for td in threads %}
+                {% set thread = td.thread %}
                 
-                <div class="thread-meta">
-                    Автор: <a href="#">{{ thread_data.thread.author.username }}</a>
-                    • {{ thread_data.thread.created_at.strftime('%d.%m.%Y') }}
-                    • 💬 {{ thread_data.posts_count }} ответов
-                </div>
-                <div class="thread-preview">
-                    {{ thread_data.preview|safe }}
-                </div>
-                
-                <!-- ✅ ПОСЛЕДНИЕ 3 ОТВЕТА -->
-                {% if thread_data.last_replies %}
-                <div class="thread-last-replies">
-                    <div class="replies-label">📌 Последние ответы:</div>
-                    <div class="replies-list">
-                        {% for reply in thread_data.last_replies %}
-                        <div class="reply-item">
-                            <span class="reply-author">{{ reply.author.username }}</span>:
-                            <span class="reply-content">{{ reply.content|safe }}</span>
+                <!-- Карточка треда -->
+                <article class="thread-card-new {% if thread.is_pinned %}pinned{% endif %}">
+                    
+                    <!-- Верх: заголовок + автор -->
+                    <div class="tc-header">
+                        <div class="tc-title-block">
+                            <a href="{{ url_for('main.view_thread', codename=section.codename, thread_id=thread.id) }}" class="tc-title">
+                                {{ thread.title|truncate(30, True, '...', 0) }}
+                            </a>
+                            <span class="thread-tag tag-{{ thread.thread_type.name }}">
+                                {% if thread.thread_type.name == 'article' %}Статья
+                                {% elif thread.thread_type.name == 'question' %}Q&A
+                                {% elif thread.thread_type.name == 'discussion' %}Дискуссия
+                                {% elif thread.thread_type.name == 'showcase' %}Проект
+                                {% elif thread.thread_type.name == 'resource' %}Материал
+                                {% endif %}
+                            </span>
+                            {% if thread.is_closed %}
+                                <span class="badge-closed"><i class="fa-solid fa-lock"></i> Закрыта</span>
+                            {% endif %}
+                            {% if thread.is_pinned %}
+                                <span class="badge-pinned"><i class="fa-solid fa-thumbtack"></i></span>
+                            {% endif %}
                         </div>
+                        <div class="tc-author">
+                            {% if td.first_post_author %}
+                                <img src="/uploads/avatars/{{ td.first_post_author.id }}.png" 
+                                     alt="{{ td.first_post_author.username }}"
+                                     class="tc-avatar"
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                <i class="fa-solid fa-circle-user" style="display: none; font-size: 30px;"></i>
+                                <span class="tc-author-name">{{ td.first_post_author.username }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Середина: вложение + текст -->
+                    <div class="tc-body">
+                        {% if td.first_post_attachment %}
+                            {% set ext = td.first_post_attachment.rsplit('.', 1)[1]|lower %}
+                            {% if ext in ['png', 'jpg', 'jpeg', 'gif', 'webp'] %}
+                                <div class="tc-attachment-img">
+                                    <img src="{{ td.first_post_attachment }}" alt="Вложение">
+                                </div>
+                            {% else %}
+                                <div class="tc-attachment-file">
+                                    📎 <a href="{{ td.first_post_attachment }}">Скачать файл</a>
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                        <div class="tc-content">
+                            {{ td.preview|safe }}
+                        </div>
+                    </div>
+
+                    <!-- Низ: апвоут + кнопки -->
+                    <div class="tc-footer">
+                        <div class="tc-actions-left">
+                            <span class="upvote-display">
+                                ▲ <span class="vote-count">{{ td.first_post_rating }}</span>
+                            </span>
+                            <a href="{{ url_for('main.view_thread', codename=section.codename, thread_id=thread.id) }}" class="btn-reply-inline">
+                                 Перейти к теме
+                            </a>
+                        </div>
+                        <div class="tc-actions-right">
+                            {% if current_user.is_authenticated and current_user.role.name in ('MODERATOR', 'ADMIN') %}
+                                <form method="POST" action="{{ url_for('admin.toggle_pin', codename=section.codename, thread_id=thread.id) }}" style="display:inline;">
+                                    <button type="submit" class="btn-mod-small" title="Закрепить/открепить">
+                                        {% if thread.is_pinned %} <i class="fa-solid fa-thumbtack"></i> Открепить{% else %} <i class="fa-solid fa-thumbtack"></i> Закрепить{% endif %}
+                                    </button>
+                                </form>
+                                <form method="POST" action="{{ url_for('admin.toggle_close', codename=section.codename, thread_id=thread.id) }}" style="display:inline;">
+                                    <button type="submit" class="btn-mod-small" title="Закрыть/открыть">
+                                        {% if thread.is_closed %}<i class="fa-solid fa-lock"></i> Открыть{% else %}<i class="fa-solid fa-lock"></i> Закрыть{% endif %}
+                                    </button>
+                                </form>
+                                <form method="POST" action="{{ url_for('admin.delete_thread', codename=section.codename, thread_id=thread.id) }}" style="display:inline;" onsubmit="return confirm('Удалить тему?');">
+                                    <button type="submit" class="btn-mod-small btn-danger-small" title="Удалить"><i class="fa-solid fa-trash"></i> Удалить</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Последние 3 ответа (с отступом) -->
+                {% if td.last_replies %}
+                    <div class="replies-block">
+                        {% for reply in td.last_replies %}
+                            <div class="reply-card">
+                                <div class="reply-header">
+                                    <img src="/uploads/avatars/{{ reply.author.id }}.png" 
+                                         alt="{{ reply.author.username }}"
+                                         class="reply-avatar"
+                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <i class="fa-solid fa-circle-user" style="display: none; font-size: 25px;"></i>
+                                    <span class="reply-author-name">{{ reply.author.username }}</span>
+                                    <span class="reply-date">{{ reply.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+                                </div>
+                                <div class="reply-body">
+                                    {% if reply.attachment %}
+                                        {% set r_ext = reply.attachment.rsplit('.', 1)[1]|lower %}
+                                        {% if r_ext in ['png', 'jpg', 'jpeg', 'gif', 'webp'] %}
+                                            <img src="{{ reply.attachment }}" class="reply-attachment-img" alt="Вложение">
+                                        {% else %}
+                                            <div class="reply-attachment-file">📎 <a href="{{ reply.attachment }}">Файл</a></div>
+                                        {% endif %}
+                                    {% endif %}
+                                    <div class="reply-content">{{ reply.full_content_html|safe }}</div>
+                                </div>
+                            </div>
                         {% endfor %}
                     </div>
-                </div>
-                {% elif thread_data.posts_count > 1 %}
-                <div class="thread-last-replies">
-                    <em>Нет ответов для предпросмотра</em>
-                </div>
                 {% endif %}
-            </div>
-            
-            <div class="thread-actions">
-                {% if current_user.is_authenticated and current_user.role.name in ('MODERATOR', 'ADMIN') %}
-                    <div class="mod-actions">
-                        <form method="POST" action="{{ url_for('admin.toggle_pin', codename=section.codename, thread_id=thread_data.thread.id) }}" style="display: inline;">
-                            <button type="submit" class="btn-mod">
-                                {% if thread_data.thread.is_pinned %}📌 Открепить{% else %}📌 Закрепить{% endif %}
-                            </button>
-                        </form>
-                        <form method="POST" action="{{ url_for('admin.toggle_close', codename=section.codename, thread_id=thread_data.thread.id) }}" style="display: inline;">
-                            <button type="submit" class="btn-mod">
-                                {% if thread_data.thread.is_closed %}🔓 Открыть{% else %}🔒 Закрыть{% endif %}
-                            </button>
-                        </form>
-                        <form method="POST" action="{{ url_for('admin.delete_thread', codename=section.codename, thread_id=thread_data.thread.id) }}" style="display: inline;">
-                            <button type="submit" class="btn-mod btn-danger" onclick="return confirm('Удалить тему «{{ thread_data.thread.title }}» со всеми постами?')">🗑️ Удалить тему</button>
-                        </form>
-                    </div>
-                {% endif %}
-                <a href="{{ url_for('main.view_thread', codename=section.codename, thread_id=thread_data.thread.id) }}" class="btn-reply">💬 Ответить</a>
-                <span class="upvote-total">👍 {{ thread_data.rating_sum }}</span>
-                <button class="btn-upvote" data-target="thread" data-id="{{ thread_data.thread.id }}">Апвоут</button>
-            </div>
-        </article>
-        {% else %}
-        <p>В этом разделе ещё нет тем. Будьте первым!</p>
-        {% endfor %}
-    </main>
 
-    <aside class="active-users">
-        <h3>🏆 Активные участники раздела</h3>
-        <ul class="user-rank">
-            {% for user, post_count in top_users %}
-            <li>
-                <span class="user-rank-number">{{ loop.index }}.</span>
-                <a href="#">{{ user.username }}</a>
-            </li>
             {% else %}
-            <li>Нет данных</li>
+                <div class="empty-threads">
+                    <p>В этом разделе ещё нет тем.</p>
+                    {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('main.new_thread', codename=section.codename) }}" class="btn btn-primary">Создать первую тему</a>
+                    {% endif %}
+                </div>
             {% endfor %}
-        </ul>
-    </aside>
-</div>
+        </div>
+
+        <!-- Правая колонка: топ-3 постеров (1/3) -->
+        <aside class="top-users-column">
+            <h3 class="top-users-title"><i class="fa-solid fa-trophy"></i> Топ-3 постеров</h3>
+            
+            {% if top_users %}
+                <div class="podium">
+                    {# Определяем позиции #}
+                    {% set first = top_users[0] if top_users|length >= 1 else none %}
+                    {% set second = top_users[1] if top_users|length >= 2 else none %}
+                    {% set third = top_users[2] if top_users|length >= 3 else none %}
+
+                    {# Пьедестал: 2 место, 1 место, 3 место #}
+                    <div class="podium-place place-second">
+                        {% if second  %}
+                            <div class="podium-avatar-wrapper">
+                                <img src="/uploads/avatars/{{ second[0].id }}.png" 
+                                    alt="{{ second[0].username }}" 
+                                    class="podium-avatar-img"
+                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                <i class="fa-regular fa-circle-user podium-avatar-icon" style="display: none;"></i>
+                            </div>
+                            <div class="podium-medal">🥈</div>
+                            <div class="podium-name">{{ second[0].username }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="podium-place place-first">
+                        {% if first %}
+                            <div class="podium-avatar-wrapper">
+                                <img src="/uploads/avatars/{{ first[0].id }}.png" 
+                                    alt="{{ first[0].username }}" 
+                                    class="podium-avatar-img"
+                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                <i class="fa-regular fa-circle-user podium-avatar-icon" style="display: none;"></i>
+                            </div>
+                            <div class="podium-medal">🥇</div>
+                            <div class="podium-name">{{ first[0].username }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="podium-place place-third">
+                        {% if third %}
+                            <div class="podium-avatar-wrapper">
+                                <img src="/uploads/avatars/{{ third[0].id }}.png" 
+                                    alt="{{ third[0].username }}" 
+                                    class="podium-avatar-img"
+                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                <i class="fa-regular fa-circle-user podium-avatar-icon" style="display: none;"></i>
+                            </div>
+                            <div class="podium-medal">🥉</div>
+                            <div class="podium-name">{{ third[0].username }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% else %}
+                <div class="empty-podium">
+                    <p>Пока нет активных участников</p>
+                </div>
+            {% endif %}
+        </aside>
+
+    </div>
+</section>
+
 {% endblock %}
