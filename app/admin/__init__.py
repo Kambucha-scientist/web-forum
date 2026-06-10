@@ -364,3 +364,40 @@ def export_threads_ratings(codename):
     filename = f"threads_ratings_{section.codename}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
     return Response(output.getvalue(), mimetype='text/csv',
                     headers={"Content-Disposition": f"attachment;filename={filename}"})
+
+@bp.route('/user/<uuid:user_id>/delete', methods=['POST'])
+@admin_required
+def delete_user(user_id):
+    # Нельзя удалить самого себя
+    if user_id == current_user.id:
+        flash('Нельзя удалить собственный аккаунт', 'danger')
+        return redirect(url_for('admin.users'))
+    
+    user = User.query.get_or_404(user_id)
+    
+    try:
+        db.session.delete(user)
+        db.session.commit()
+        flash(f'Пользователь {user.username} удалён', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Ошибка при удалении: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.users'))
+
+@bp.route('/user/<uuid:user_id>/toggle_ban', methods=['POST'])
+@login_required
+@admin_required
+def toggle_ban(user_id):
+    if user_id == current_user.id:
+        flash('Нельзя заблокировать собственный аккаунт', 'danger')
+        return redirect(url_for('admin.users'))
+    
+    user = User.query.get_or_404(user_id)
+    
+    user.is_banned = not user.is_banned
+    db.session.commit()
+    status = 'заблокирован' if user.is_banned else 'разблокирован'
+    flash(f'Пользователь {user.username} {status}', 'success')
+    
+    return redirect(url_for('admin.users'))

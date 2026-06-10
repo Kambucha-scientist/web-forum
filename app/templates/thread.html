@@ -83,6 +83,19 @@
                             </form>
                         </div>
                     {% endif %}
+                    {% if current_user.is_authenticated and current_user.id != post.user_id and current_user.role.name in ('MODERATOR', 'ADMIN') %}
+                        <form method="POST" action="{{ url_for('admin.toggle_ban', user_id=post.author.id) }}" 
+                            style="display:inline;" 
+                            onsubmit="return confirm('{% if not post.author.is_banned %}Заблокировать пользователя {{ post.author.username }}?{% else %}Разблокировать пользователя {{ post.author.username }}?{% endif %}');">
+                            <button type="submit" class="btn-mod-small {% if not post.author.is_banned %}btn-warning-small{% else %}btn-success-small{% endif %}" title="{% if not post.author.is_banned %}Заблокировать{% else %}Разблокировать{% endif %}">
+                                {% if post.author.is_banned %}
+                                    <i class="fa-solid fa-unlock"></i> Разблокировать    
+                                {% else %}
+                                    <i class="fa-solid fa-ban"></i> Заблокировать
+                                {% endif %}
+                            </button>
+                        </form>
+                    {% endif %}
                 </div>
 
                 <!-- Вложение -->
@@ -136,7 +149,7 @@
     </div>
 
     <!-- Форма ответа -->
-    {% if current_user.is_authenticated and (not thread.is_closed or current_user.role.name in ('MODERATOR', 'ADMIN')) %}
+    {% if current_user.is_authenticated and (not current_user.is_banned) and (not thread.is_closed or current_user.role.name in ('MODERATOR', 'ADMIN')) %}
         <div class="reply-form-new">
             <h3>Ответить в тему</h3>
             <form method="POST" action="{{ url_for('main.reply_to_thread', codename=section.codename, thread_id=thread.id) }}" enctype="multipart/form-data">
@@ -151,9 +164,13 @@
                 <button type="submit" class="btn btn-primary">Отправить</button>
             </form>
         </div>
+    {% elif current_user.is_authenticated and current_user.is_banned %}
+    <div class="ban-notice">
+        <i class="fa-solid fa-lock"></i> Ваш аккаунт заблокирован. Вы не можете отвечать в темах.
+    </div>    
     {% elif thread.is_closed %}
         <div class="thread-closed-notice">
-            🔒 Тема закрыта для ответов.
+            <i class="fa-solid fa-lock"></i> Тема закрыта для ответов.
         </div>
     {% else %}
         <div class="login-notice">

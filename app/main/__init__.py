@@ -10,7 +10,7 @@ import re
 import os
 import math
 from collections import defaultdict
-
+from app.decorators import account_active_required
 
 bp = Blueprint('main', __name__)
 
@@ -220,6 +220,7 @@ def section_by_codename(codename):
 
 @bp.route('/<string:codename>/new', methods=['GET', 'POST'])
 @login_required
+@account_active_required
 def new_thread(codename):
     section = Section.query.filter_by(codename=codename, is_visible=True).first_or_404()
     
@@ -314,6 +315,7 @@ def view_thread(codename, thread_id):
 
 @bp.route('/<string:codename>/<uuid:thread_id>/reply', methods=['POST'])
 @login_required
+@account_active_required
 def reply_to_thread(codename, thread_id):
     section = Section.query.filter_by(codename=codename, is_visible=True).first_or_404()
     thread = Thread.query.filter_by(id=thread_id, section_id=section.id).first_or_404()

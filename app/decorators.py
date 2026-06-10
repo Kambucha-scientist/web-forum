@@ -42,3 +42,13 @@ def post_owner_or_moderator(func):
         flash('Вы не можете редактировать этот пост.', 'danger')
         return redirect(request.referrer or url_for('main.index'))
     return wrapped
+
+def account_active_required(func):
+    @wraps(func)
+    def wrapped(*args, **kwargs):
+        if not current_user.is_active:
+            flash('Ваш аккаунт заблокирован. Вы не можете выполнять это действие.', 'danger')
+            return redirect(request.referrer or url_for('main.index'))
+            
+        return func(*args, **kwargs)
+    return wrapped

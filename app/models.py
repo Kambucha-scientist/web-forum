@@ -41,7 +41,7 @@ class User(Base, UserMixin):
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.Enum(UserRole), nullable=False, default=UserRole.USER)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    is_active = db.Column(db.Boolean, default=True, nullable=False)
+    is_banned = db.Column(db.Boolean, default=False, nullable=True)
 
     # Связи (обратные ссылки)
     threads = db.relationship('Thread', back_populates='author', cascade='all, delete-orphan')

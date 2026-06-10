@@ -374,6 +374,15 @@ body {
     background-color: #64748b;
 }
 
+.btn-danger {
+    background-color: #ef4444;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #dc2626;
+}
+
 /* 4. Улучшение подсказки по Markdown */
 .markdown-hint code {
     background-color: #e2e8f0;
@@ -1091,13 +1100,6 @@ textarea {
     font-size: 0.875rem;
 }
 
-.file-download-link {
-  display: inline-block;
-  background-color: #f0f0f0;
-  padding: 0 8px; /* отступы слева и справа */
-  text-decoration: none;
-}
-
 .admin-header {
     display: flex;
     justify-content: space-between;
@@ -1786,4 +1788,57 @@ input {
     left: 50%;
     transform: translate(-50%, -50%);
     color: #94a3b8;
+}
+
+.ban-notice {
+    display: inline-block;
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    margin: 1rem 0;
+    color: #92400e;
+    font-weight: 500;
+    text-align: center;
+}
+
+/* Кнопка блокировки (жёлтая) */
+.btn-warning {
+    background-color: #f59e0b;
+    color: white;
+}
+
+.btn-warning:hover {
+    background-color: #d97706;
+}
+
+/* Кнопка разблокировки (зелёная) */
+.btn-success {
+    background-color: #22c55e;
+    color: white;
+}
+
+.btn-success:hover {
+    background-color: #16a34a;
+}
+
+/* Маленькие версии для постов */
+.btn-warning-small {
+    color: #d97706;
+    border-color: #fcd34d;
+}
+
+.btn-warning-small:hover {
+    background: #fef3c7;
+    border-color: #d97706;
+}
+
+.btn-success-small {
+    color: #16a34a;
+    border-color: #86efac;
+}
+
+.btn-success-small:hover {
+    background: #dcfce7;
+    border-color: #16a34a;
 }

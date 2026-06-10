@@ -42,7 +42,7 @@ def register():
         username = request.form.get('username', '').strip()
         email = request.form.get('email', '').strip().lower()
         password = request.form.get('password')
-        confirm = request.form.get('confirm')
+        confirm = request.form.get('password_confirm')
         
         # Валидация
         errors = []
@@ -69,7 +69,7 @@ def register():
             for err in errors:
                 flash(err, 'danger')
         else:
-            user = User(username=username, email=email, role=UserRole.USER, is_active=True)
+            user = User(username=username, email=email, role=UserRole.USER, is_banned=False)
             user.set_password(password)
             db.session.add(user)
             db.session.commit()

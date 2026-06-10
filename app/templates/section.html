@@ -17,10 +17,14 @@
         {% if section.description %}
             <p class="section-main-desc">{{ section.description }}</p>
         {% endif %}
-        {% if current_user.is_authenticated %}
+        {% if current_user.is_authenticated and not current_user.is_banned%}
             <a href="{{ url_for('main.new_thread', codename=section.codename) }}" class="btn btn-primary btn-new-thread">
                  Создать тему
             </a>
+        {% elif current_user.is_authenticated and current_user.is_banned %}
+            <div class="ban-notice">
+                <i class="fa-solid fa-lock"></i> Ваш аккаунт заблокирован. Вы не можете создавать темы.
+            </div>
         {% endif %}
     </div>
 
