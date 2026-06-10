@@ -116,7 +116,7 @@ class Post(Base):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     is_solution = db.Column(db.Boolean, default=False, nullable=False)
 
-    # Связи
+    # 
     thread = db.relationship('Thread', back_populates='posts')
     author = db.relationship('User', back_populates='posts')
     ratings = db.relationship('Rating', back_populates='target_post', cascade='all, delete-orphan')
@@ -145,7 +145,6 @@ class Rating(Base):
         return f'<Rating +1 from {self.user_id} to post {self.target_id}>'
 
 
-# ========== ЗАГРУЗЧИК ДЛЯ FLASK-LOGIN ==========
 @login_manager.user_loader
 def load_user(user_id):
     try:

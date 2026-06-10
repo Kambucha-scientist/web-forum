@@ -167,7 +167,7 @@
                                             </div>
                                         {% endif %}
                                     {% endif %}
-                                    <div class="reply-content">{{ reply.full_content_html|safe }}</div>
+                                    <div class="reply-content">{{ reply.full_content_html|safe|truncate(200, True, '...', 0) }}</div>
                                 </div>
                             </div>
                         {% endfor %}

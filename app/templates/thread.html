@@ -66,38 +66,9 @@
                                 {% endif %}
                             </span>
                         </div>
-                    </div>
-                    
-                    <!-- Модерские кнопки -->
-                    {% if current_user.is_authenticated and (current_user.id == post.user_id or current_user.role.name in ('MODERATOR', 'ADMIN')) %}
-                        <div class="post-actions-top">
-                            <a href="{{ url_for('admin.edit_post', codename=section.codename, thread_id=thread.id, post_id=post.id) }}" 
-                               class="btn-mod-small" title="Редактировать">
-                                <i class="fa-solid fa-pen"></i> Редактировать
-                            </a>
-                            <form method="POST" action="{{ url_for('admin.delete_post', codename=section.codename, thread_id=thread.id, post_id=post.id) }}" 
-                                  style="display:inline;" onsubmit="return confirm('Удалить пост?');">
-                                <button type="submit" class="btn-mod-small btn-danger-small" title="Удалить">
-                                    <i class="fa-solid fa-trash"></i> Удалить
-                                </button>
-                            </form>
-                        </div>
-                    {% endif %}
-                    {% if current_user.is_authenticated and current_user.id != post.user_id and current_user.role.name in ('MODERATOR', 'ADMIN') %}
-                        <form method="POST" action="{{ url_for('admin.toggle_ban', user_id=post.author.id) }}" 
-                            style="display:inline;" 
-                            onsubmit="return confirm('{% if not post.author.is_banned %}Заблокировать пользователя {{ post.author.username }}?{% else %}Разблокировать пользователя {{ post.author.username }}?{% endif %}');">
-                            <button type="submit" class="btn-mod-small {% if not post.author.is_banned %}btn-warning-small{% else %}btn-success-small{% endif %}" title="{% if not post.author.is_banned %}Заблокировать{% else %}Разблокировать{% endif %}">
-                                {% if post.author.is_banned %}
-                                    <i class="fa-solid fa-unlock"></i> Разблокировать    
-                                {% else %}
-                                    <i class="fa-solid fa-ban"></i> Заблокировать
-                                {% endif %}
-                            </button>
-                        </form>
-                    {% endif %}
+                    </div>                   
                 </div>
-
+                
                 <!-- Вложение -->
                 {% if post.attachment %}
                     {% set ext = post.attachment.rsplit('.', 1)[1]|lower %}
@@ -142,8 +113,32 @@
                             ▲ {{ post.rating_count }}
                         </span>
                     {% endif %}
+                    {% if current_user.is_authenticated and (current_user.id == post.user_id or current_user.role.name in ('MODERATOR', 'ADMIN')) %}
+                            <a href="{{ url_for('admin.edit_post', codename=section.codename, thread_id=thread.id, post_id=post.id) }}" 
+                               class="btn-mod-small" title="Редактировать" style="margin-right: 5px;">
+                                <i class="fa-solid fa-pen"></i> Редактировать
+                            </a>
+                            <form method="POST" action="{{ url_for('admin.delete_post', codename=section.codename, thread_id=thread.id, post_id=post.id) }}" 
+                                  style="display:inline;" onsubmit="return confirm('Удалить пост?');">
+                                <button type="submit" class="btn-mod-small btn-danger-small" title="Удалить">
+                                    <i class="fa-solid fa-trash"></i> Удалить
+                                </button>
+                            </form>
+                    {% endif %}
+                    {% if current_user.is_authenticated and current_user.id != post.user_id and current_user.role.name in ('MODERATOR', 'ADMIN') %}
+                        <form method="POST" action="{{ url_for('admin.toggle_ban', user_id=post.author.id) }}" 
+                            style="display:inline;" 
+                            onsubmit="return confirm('{% if not post.author.is_banned %}Заблокировать пользователя {{ post.author.username }}?{% else %}Разблокировать пользователя {{ post.author.username }}?{% endif %}');">
+                            <button type="submit" class="btn-mod-small {% if not post.author.is_banned %}btn-warning-small{% else %}btn-success-small{% endif %}" title="{% if not post.author.is_banned %}Заблокировать{% else %}Разблокировать{% endif %}">
+                                {% if post.author.is_banned %}
+                                    <i class="fa-solid fa-unlock"></i> Разблокировать    
+                                {% else %}
+                                    <i class="fa-solid fa-ban"></i> Заблокировать
+                                {% endif %}
+                            </button>
+                        </form>
+                    {% endif %}
                 </div>
-
             </article>
         {% endfor %}
     </div>

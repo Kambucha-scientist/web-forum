@@ -15,7 +15,7 @@
         
         <div class="form-group">
             <label for="codename">Кодовое имя (URL) *</label>
-            <input type="text" name="codename" id="codename" required value="{{ section.codename if section else '' }}" pattern="[a-z0-9_-]+">
+            <input type="text" name="codename" id="codename" required value="{{ section.codename if section else '' }}" maxlength="5" pattern="[a-z0-9_-]+">
             <small>Будет в URL: <code>/<span id="codename-preview">{{ section.codename if section else 'razdel' }}</span></code>. Только латиница, цифры, _ и -</small>
         </div>
         

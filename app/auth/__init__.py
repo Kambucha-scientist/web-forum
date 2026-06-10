@@ -8,7 +8,6 @@ bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
-    """Страница входа"""
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
     
@@ -34,7 +33,6 @@ def login():
 
 @bp.route('/register', methods=['GET', 'POST'])
 def register():
-    """Регистрация нового пользователя"""
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
     

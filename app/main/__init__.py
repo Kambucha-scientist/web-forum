@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from app import db
 from app.models import Section, Thread, Post, User, ThreadType, GroupType, Rating
-from sqlalchemy import func, desc
+from sqlalchemy import func
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 import markdown
@@ -63,7 +63,6 @@ def index():
     now = datetime.utcnow()
     day_ago = now - timedelta(hours=24)
     
-    # Посты за 24 часа
     posts_last_24h = Post.query.filter(Post.created_at >= day_ago).all()
     thread_stats = defaultdict(lambda: {'authors': set(), 'messages': 0, 'post_ids': []})
     for p in posts_last_24h:
@@ -100,7 +99,7 @@ def index():
             L = upvotes_per_thread.get(thread.id, 0)
             last_post = Post.query.filter_by(thread_id=thread.id).order_by(Post.created_at.desc()).first()
             A = (now - last_post.created_at).total_seconds() / 3600 if last_post else (now - thread.created_at).total_seconds() / 3600
-            posts_count = M  # или общее количество постов (не только за 24ч) – сделаем отдельно
+            posts_count = M  
             rating_sum = get_thread_rating(thread.id)  # общая сумма голосов за всё время
         else:
             last_post = Post.query.filter_by(thread_id=thread.id).order_by(Post.created_at.desc()).first()

@@ -387,7 +387,7 @@ def delete_user(user_id):
 
 @bp.route('/user/<uuid:user_id>/toggle_ban', methods=['POST'])
 @login_required
-@admin_required
+@moderator_required
 def toggle_ban(user_id):
     if user_id == current_user.id:
         flash('Нельзя заблокировать собственный аккаунт', 'danger')
@@ -400,4 +400,4 @@ def toggle_ban(user_id):
     status = 'заблокирован' if user.is_banned else 'разблокирован'
     flash(f'Пользователь {user.username} {status}', 'success')
     
-    return redirect(url_for('admin.users'))
+    return redirect(request.referrer)
