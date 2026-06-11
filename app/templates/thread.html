@@ -60,7 +60,7 @@
                         <div class="post-author-details">
                             <span class="post-author-name">{{ post.author.username }}</span>
                             <span class="post-date">
-                                {{ post.created_at.strftime('%d.%m.%Y %H:%M') }}
+                                <span data-utc-time="{{ post.created_at.strftime('%Y-%m-%d %H:%M:%S') }}"></span>
                                 {% if post.is_edited %}
                                     <span class="edited-badge">(отредактировано)</span>
                                 {% endif %}

@@ -1,4 +1,21 @@
 document.addEventListener('DOMContentLoaded', function() {
+    
+    document.querySelectorAll('[data-utc-time]').forEach(el => {
+        const utcString = el.getAttribute('data-utc-time');
+        const utcDate = new Date(utcString + 'Z');
+        
+        const options = { 
+            day: '2-digit', 
+            month: '2-digit', 
+            year: 'numeric',
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false
+        };
+        
+        el.textContent = utcDate.toLocaleString('ru-RU', options);
+    });
+
     const voteBtns = document.querySelectorAll('.vote-btn');
     
     voteBtns.forEach(btn => {

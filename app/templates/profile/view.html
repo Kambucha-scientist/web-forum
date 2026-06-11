@@ -18,7 +18,7 @@
             {% if current_user.role.name in ('MODERATOR', 'ADMIN') %}
             <p><strong>Права:</strong> {{ user.role.value }}</p>
             {% endif %}
-            <p><strong>Зарегистрирован:</strong> {{ user.created_at.strftime('%d.%m.%Y в %H:%M') }}</p>
+            <p>Зарегистрирован: <span data-utc-time="{{ user.created_at.strftime('%Y-%m-%d %H:%M:%S') }}"></span></p>
             {% if current_user.id == user.id %}
                 <a href="{{ url_for('profile.edit') }}" class="btn btn-primary" style="margin-top: 10px;"><i class="fa-solid fa-pen"></i> Редактировать профиль</a>
             {% endif %}
