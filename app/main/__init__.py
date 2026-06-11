@@ -32,11 +32,9 @@ def thread_hot_score(U, M, L, A):
     return log_part + decay_part
 
 def get_post_rating(post_id):
-    """Возвращает количество голосов за пост"""
     return db.session.query(func.count(Rating.id)).filter(Rating.target_id == post_id).scalar() or 0
 
 def get_thread_rating(thread_id):
-    """Возвращает сумму голосов за все посты в треде"""
     return db.session.query(func.count(Rating.id)).join(Post, Post.id == Rating.target_id).filter(Post.thread_id == thread_id).scalar() or 0
 
 
@@ -100,7 +98,7 @@ def index():
             last_post = Post.query.filter_by(thread_id=thread.id).order_by(Post.created_at.desc()).first()
             A = (now - last_post.created_at).total_seconds() / 3600 if last_post else (now - thread.created_at).total_seconds() / 3600
             posts_count = M  
-            rating_sum = get_thread_rating(thread.id)  # общая сумма голосов за всё время
+            rating_sum = get_thread_rating(thread.id)  
         else:
             last_post = Post.query.filter_by(thread_id=thread.id).order_by(Post.created_at.desc()).first()
             A = (now - last_post.created_at).total_seconds() / 3600 if last_post else (now - thread.created_at).total_seconds() / 3600

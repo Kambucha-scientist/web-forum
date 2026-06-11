@@ -177,7 +177,7 @@
             {% else %}
                 <div class="empty-threads">
                     <p>В этом разделе ещё нет тем.</p>
-                    {% if current_user.is_authenticated %}
+                    {% if current_user.is_authenticated and not current_user.is_banned %}
                         <a href="{{ url_for('main.new_thread', codename=section.codename) }}" class="btn btn-primary">Создать первую тему</a>
                     {% endif %}
                 </div>

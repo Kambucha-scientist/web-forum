@@ -12,8 +12,8 @@ bp = Blueprint('profile', __name__, url_prefix='/profile')
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg', 'gif'}
 
+@login_required
 def save_avatar(user_id, file):
-    """Сохраняет аватарку пользователя, конвертирует в PNG"""
     avatars_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'avatars')
     os.makedirs(avatars_dir, exist_ok=True)
     
@@ -23,6 +23,7 @@ def save_avatar(user_id, file):
     img.save(filepath, 'PNG')
     return f'/uploads/avatars/{user_id}.png'
 
+@login_required
 def delete_avatar(user_id):
     avatars_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'avatars')
     filepath = os.path.join(avatars_dir, f'{user_id}.png')
@@ -30,6 +31,7 @@ def delete_avatar(user_id):
         os.remove(filepath)
 
 @bp.route('/<uuid:user_id>')
+@login_required
 def view(user_id):
     user = User.query.get_or_404(user_id)
     avatar_path = f'/uploads/avatars/{user.id}.png'

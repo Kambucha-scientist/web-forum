@@ -42,7 +42,6 @@ def register():
         password = request.form.get('password')
         confirm = request.form.get('password_confirm')
         
-        # Валидация
         errors = []
         if not username or len(username) < 3:
             errors.append('Имя пользователя должно содержать минимум 3 символа')
@@ -57,7 +56,6 @@ def register():
         elif password != confirm:
             errors.append('Пароли не совпадают')
         
-        # Проверка уникальности
         if User.query.filter_by(username=username).first():
             errors.append('Пользователь с таким именем уже существует')
         if User.query.filter_by(email=email).first():
