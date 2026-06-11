@@ -238,10 +238,8 @@ def new_thread(codename):
         if 'attachment' in request.files:
             file = request.files['attachment']
             if file and file.filename:
-                # Проверка расширения
                 ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
                 if ext in current_app.config['ALLOWED_EXTENSIONS']:
-                    # Генерируем уникальное имя
                     import uuid
                     filename = secure_filename(f"{uuid.uuid4().hex}_{file.filename}")
                     attachments_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'attachments')
@@ -366,7 +364,6 @@ def vote():
         new_count = get_post_rating(post.id)
         return jsonify({'success': True, 'new_rating': new_count, 'voted': False})
     else:
-        # Добавляем голос
         rating = Rating(user_id=current_user.id, target_id=post.id)
         db.session.add(rating)
         db.session.commit()

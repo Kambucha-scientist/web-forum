@@ -4,7 +4,6 @@ from app import db
 from app.models import User
 import os
 import re
-from werkzeug.utils import secure_filename
 from PIL import Image   
 
 bp = Blueprint('profile', __name__, url_prefix='/profile')
