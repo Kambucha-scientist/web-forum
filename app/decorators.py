@@ -4,7 +4,6 @@ from flask_login import current_user
 from app.models import Post
 
 def admin_required(func):
-    """Декоратор: доступ только для администратора"""
     @wraps(func)
     def wrapped(*args, **kwargs):
         if not current_user.is_authenticated:
@@ -17,10 +16,7 @@ def admin_required(func):
     return wrapped
 
 def moderator_required(func):
-    """
-    Декоратор: доступ для модератора или администратора.
-    (модератор имеет права на все разделы, админ – тем более)
-    """
+    
     @wraps(func)
     def wrapped(*args, **kwargs):
         if not current_user.is_authenticated:
@@ -46,7 +42,7 @@ def post_owner_or_moderator(func):
 def account_active_required(func):
     @wraps(func)
     def wrapped(*args, **kwargs):
-        if not current_user.is_active:
+        if current_user.is_banned:
             flash('Ваш аккаунт заблокирован. Вы не можете выполнять это действие.', 'danger')
             return redirect(request.referrer or url_for('main.index'))
             
