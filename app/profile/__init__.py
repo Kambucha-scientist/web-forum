@@ -40,7 +40,6 @@ def view(user_id):
 @bp.route('/edit', methods=['GET', 'POST'])
 @login_required
 def edit():
-    """Редактирование профиля текущего пользователя"""
     if request.method == 'POST':
         if 'delete_avatar' in request.form:
             delete_avatar(current_user.id)
@@ -68,7 +67,7 @@ def edit():
             if 'avatar' in request.files:
                 file = request.files['avatar']
                 if file and file.filename and allowed_file(file.filename):
-                    delete_avatar(current_user.id) # Удаляем старую перед сохранением новой
+                    delete_avatar(current_user.id) 
                     save_avatar(current_user.id, file)
                     flash('Аватарка обновлена!', 'success')
                 elif file and file.filename:

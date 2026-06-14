@@ -13,7 +13,6 @@ class Base(db.Model):
     __abstract__=True
     pass
 
-# ========== ENUM (строго по диаграмме) ==========
 class ThreadType(enum.Enum):
     article = "article"       # Статья или туториал
     question = "question"     # Вопрос или задача
@@ -31,7 +30,7 @@ class UserRole(enum.Enum):
     MODERATOR = "MODERATOR"
     ADMIN = "ADMIN"
 
-# ========== ТАБЛИЦЫ ==========
+
 class User(Base, UserMixin):
     __tablename__ = 'users'
 

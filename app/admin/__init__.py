@@ -146,7 +146,6 @@ def delete_section(section_id):
 @login_required
 @moderator_required
 def toggle_pin(codename, thread_id):
-    """Закрепить/открепить тему"""
     section = Section.query.filter_by(codename=codename).first_or_404()
     thread = Thread.query.filter_by(id=thread_id, section_id=section.id).first_or_404()
     thread.is_pinned = not thread.is_pinned
@@ -170,7 +169,6 @@ def toggle_close(codename, thread_id):
 @login_required
 @moderator_required
 def delete_thread(codename, thread_id):
-    """Удалить тему со всеми постами"""
     section = Section.query.filter_by(codename=codename).first_or_404()
     thread = Thread.query.filter_by(id=thread_id, section_id=section.id).first_or_404()
     db.session.delete(thread)
@@ -182,7 +180,6 @@ def delete_thread(codename, thread_id):
 @login_required
 @post_owner_or_moderator
 def edit_post(codename, thread_id, post_id):
-    """Редактирование поста (для модератора/админа)"""
     section = Section.query.filter_by(codename=codename).first_or_404()
     thread = Thread.query.filter_by(id=thread_id, section_id=section.id).first_or_404()
     post = Post.query.filter_by(id=post_id, thread_id=thread.id).first_or_404()
@@ -203,7 +200,6 @@ def edit_post(codename, thread_id, post_id):
 @login_required
 @post_owner_or_moderator
 def delete_post(codename, thread_id, post_id):
-    """Удаление поста"""
     section = Section.query.filter_by(codename=codename).first_or_404()
     thread = Thread.query.filter_by(id=thread_id, section_id=section.id).first_or_404()
     post = Post.query.filter_by(id=post_id, thread_id=thread.id).first_or_404()
@@ -228,7 +224,6 @@ def delete_post(codename, thread_id, post_id):
 def export_users_ratings(codename):
     section = Section.query.filter_by(codename=codename).first_or_404()
     
-    # Получаем все посты раздела с рейтингами каждого поста (как в section_by_codename)
     posts_data = db.session.query(
         Post.id, Post.user_id, func.count(Rating.id).label('rating_count')
     ).outerjoin(Rating, Rating.target_id == Post.id)\
@@ -237,16 +232,13 @@ def export_users_ratings(codename):
      .group_by(Post.id)\
      .all()
     
-    # Группируем по пользователям: список rating_count каждого поста
     user_ratings = defaultdict(list)
     for post in posts_data:
         user_ratings[post.user_id].append(post.rating_count or 0)
     
-    # Получаем имена пользователей
     users = User.query.filter(User.id.in_(user_ratings.keys())).all()
     user_map = {u.id: u for u in users}
     
-    # Функция h-index
     def h_index(ratings):
         ratings.sort(reverse=True)
         h = 0
@@ -257,7 +249,6 @@ def export_users_ratings(codename):
                 break
         return h
     
-    # Формируем список для CSV
     data = []
     for user_id, ratings in user_ratings.items():
         user = user_map.get(user_id)
@@ -268,13 +259,11 @@ def export_users_ratings(codename):
         h = h_index(ratings)
         data.append([user.username, post_count, total_votes, h])
     
-    # Сортируем по h-index (убывание)
     data.sort(key=lambda x: x[3], reverse=True)
     
-    # Создаём CSV
     output = StringIO()
-    output.write('\ufeff')  # BOM для корректного открытия в Excel
-    writer = csv.writer(output, delimiter=';')  # разделитель точка с запятой
+    output.write('\ufeff')  
+    writer = csv.writer(output, delimiter=';')  
     writer.writerow(['Имя пользователя', 'Количество постов', 'Всего голосов (апвоутов)', 'h-index'])
     writer.writerows(data)
     output.seek(0)
@@ -291,14 +280,12 @@ def export_threads_ratings(codename):
     now = datetime.utcnow()
     day_ago = now - timedelta(hours=24)
     
-    # Получаем все треды раздела
     threads = Thread.query.filter_by(section_id=section.id, is_closed=False).all()
     
-    # Посты за последние 24 часа для Hot-формулы
     posts_last_24h = Post.query.filter(Post.created_at >= day_ago).all()
     thread_stats = defaultdict(lambda: {'authors': set(), 'messages': 0, 'post_ids': []})
     for p in posts_last_24h:
-        if p.thread.section_id == section.id:  # только треды этого раздела
+        if p.thread.section_id == section.id:  
             thread_stats[p.thread_id]['authors'].add(p.user_id)
             thread_stats[p.thread_id]['messages'] += 1
             thread_stats[p.thread_id]['post_ids'].append(p.id)
@@ -322,14 +309,11 @@ def export_threads_ratings(codename):
         if tid:
             upvotes_per_thread[tid] += 1
     
-    # Готовим данные для CSV
     data = []
     for thread in threads:
-        # Общая сумма голосов (за всё время)
         total_votes = get_thread_rating(thread.id)
         total_posts = Post.query.filter_by(thread_id=thread.id).count()
         
-        # Данные за 24 часа
         if thread.id in thread_stats:
             U = len(thread_stats[thread.id]['authors'])
             M = thread_stats[thread.id]['messages']
@@ -351,12 +335,11 @@ def export_threads_ratings(codename):
             f"{hot_score:.4f}"
         ])
     
-    # Сортируем по убыванию Hot
     data.sort(key=lambda x: float(x[4]), reverse=True)
     
     output = StringIO()
-    output.write('\ufeff')  # BOM для корректного открытия в Excel
-    writer = csv.writer(output, delimiter=';')  # разделитель точка с запятой
+    output.write('\ufeff')  
+    writer = csv.writer(output, delimiter=';')  
     writer.writerow(['Заголовок', 'Дата создания', 'Количество постов', 'Всего голосов (апвоутов)', 'Hot-рейтинг'])
     writer.writerows(data)
     output.seek(0)
@@ -368,7 +351,6 @@ def export_threads_ratings(codename):
 @bp.route('/user/<uuid:user_id>/delete', methods=['POST'])
 @admin_required
 def delete_user(user_id):
-    # Нельзя удалить самого себя
     if user_id == current_user.id:
         flash('Нельзя удалить собственный аккаунт', 'danger')
         return redirect(url_for('admin.users'))
